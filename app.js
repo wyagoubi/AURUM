@@ -73,6 +73,7 @@ function showPage(id) {
 
 navLinks.forEach(link => {
   link.addEventListener('click', e => {
+    if (link.closest('#navUser')) return;
     if (link.dataset.page) { e.preventDefault(); showPage(link.dataset.page); return; }
     if (link.getAttribute('href') === 'owner.html') {
       e.preventDefault();
@@ -253,8 +254,8 @@ function createHotelCard(hotel, delay=0) {
   card.style.cssText = `animation:fadeUp 0.5s ease ${delay*0.07}s both`;
   const stars = '★'.repeat(hotel.stars)+'☆'.repeat(5-hotel.stars);
   card.innerHTML = `
-    <div class="hotel-card-img" style="background:linear-gradient(135deg,${hotel.color},#1a1a10)">
-      <div class="hotel-card-img-inner">${hotel.initial}</div>
+    <div class="hotel-card-img" style="${hotel.cover ? `background:url('${hotel.cover}') center/cover no-repeat` : `background:linear-gradient(135deg,${hotel.color},#1a1a10)`}">
+      <div class="hotel-card-img-inner" style="${hotel.cover ? 'opacity:0' : ''}">${hotel.initial}</div>
       <div class="hotel-badge">${hotel.stars} ★</div>
       <button class="hotel-view-photos">📷 View Photos</button>
     </div>
@@ -353,13 +354,17 @@ function renderGallery() {
 }
 
 function renderMainPhoto(photo) {
-  galImgInner.style.background = photo.gradient;
-  galImgInner.style.backgroundSize = 'cover';
-  galImgInner.textContent = photo.initial || galHotel.initial;
-  galImgInner.style.color = 'rgba(201,169,110,0.18)';
-  galImgInner.style.fontSize = '72px';
-  galImgInner.style.fontFamily = "'Cormorant Garamond',serif";
-  galImgInner.style.letterSpacing = '6px';
+  if (photo.url) {
+    galImgInner.style.background = `url('${photo.url}') center/cover no-repeat`;
+    galImgInner.textContent = '';
+  } else {
+    galImgInner.style.background = photo.gradient || `linear-gradient(135deg,${galHotel.color},#0a0a06)`;
+    galImgInner.textContent = photo.initial || galHotel.initial;
+    galImgInner.style.color = 'rgba(201,169,110,0.18)';
+    galImgInner.style.fontSize = '72px';
+    galImgInner.style.fontFamily = "'Cormorant Garamond',serif";
+    galImgInner.style.letterSpacing = '6px';
+  }
   galImgLabel.textContent = photo.label;
   galImgInner.style.opacity = '0';
   requestAnimationFrame(() => { galImgInner.style.transition='opacity 0.3s'; galImgInner.style.opacity='1'; });
@@ -370,10 +375,13 @@ function renderThumbs(photos) {
   photos.forEach((p, i) => {
     const t = document.createElement('div');
     t.className = 'gallery-thumb' + (i === galIndex ? ' active' : '');
-    t.style.background = p.gradient;
+    if (p.url) {
+      t.style.cssText = `background:url('${p.url}') center/cover no-repeat;`;
+    } else {
+      t.style.cssText = `background:${p.gradient};font-size:10px;color:rgba(201,169,110,0.4);letter-spacing:1px;text-transform:uppercase;`;
+      t.textContent = p.label.slice(0,2);
+    }
     t.title = p.label;
-    t.textContent = p.label.slice(0,2);
-    t.style.cssText += `;background:${p.gradient};font-size:10px;color:rgba(201,169,110,0.4);letter-spacing:1px;text-transform:uppercase;`;
     t.addEventListener('click', () => { galIndex = i; renderGallery(); });
     galleryThumbs.appendChild(t);
   });
@@ -1181,14 +1189,5 @@ window.addEventListener('DOMContentLoaded', () => {
       dashLink.textContent = 'Dashboard';
       loggedDiv.insertBefore(dashLink, loggedDiv.firstChild);
     }
-
-
-
-     document.querySelectorAll('#navUser a').forEach(link => {
-  link.addEventListener('click', function(e) {
-    e.stopPropagation(); // منع الكود الآخر من منع الرابط
-    // الرابط سيعمل بشكل طبيعي
-  });
-});
   }
 })();
