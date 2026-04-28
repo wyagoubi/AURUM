@@ -674,6 +674,40 @@ if (payConfirm) {
 const aiModal    = document.getElementById('aiModal');
 const aiMessages = document.getElementById('aiMessages');
 const aiInput    = document.getElementById('aiInput');
+// Restore chat from localStorage
+window._aiHistory = [];
+try {
+  const _saved = localStorage.getItem('aurum-chat-history');
+  if (_saved) {
+    window._aiHistory = JSON.parse(_saved) || [];
+    window._aiHistory.forEach(function(turn) {
+      var div = document.createElement('div');
+      div.className = 'ai-msg ai-msg--' + (turn.role === 'user' ? 'user' : 'bot');
+      div.innerHTML = '<div class="ai-msg-avatar">' + (turn.role === 'user' ? '✦' : 'A') + '</div><div class="ai-msg-bubble">' + turn.content + '</div>';
+      aiMessages.appendChild(div);
+    });
+    if (window._aiHistory.length > 0) setTimeout(function(){ aiMessages.scrollTop = aiMessages.scrollHeight; }, 100);
+  }
+} catch(e) {}
+
+// Restore chat history from localStorage
+window._aiHistory = [];
+try {
+  const saved = localStorage.getItem('aurum-chat-history');
+  if (saved) {
+    window._aiHistory = JSON.parse(saved) || [];
+    // Restore messages in UI
+    window._aiHistory.forEach(turn => {
+      const div = document.createElement('div');
+      div.className = `ai-msg ai-msg--${turn.role === 'user' ? 'user' : 'bot'}`;
+      div.innerHTML = `
+        <div class="ai-msg-avatar">${turn.role === 'user' ? '👤' : 'A'}</div>
+        <div class="ai-msg-bubble">${turn.content}</div>`;
+      aiMessages.appendChild(div);
+    });
+    if (window._aiHistory.length > 0) aiMessages.scrollTop = aiMessages.scrollHeight;
+  }
+} catch(e) {}
 
 function openAiChatModal() {
   aiModal.classList.add('open');
@@ -698,6 +732,51 @@ function appendMsg(text, role) {
   return div;
 }
 
+
+function quickAsk(btn) {
+  aiInput.value = btn.textContent.replace(/[🌹🌊]/g, '').trim();
+  document.getElementById('aiSuggestions').style.display = 'none';
+  sendAI();
+}
+
+// ══ ONE-TIME AMBIENT SOUND (plays once per visit, not on refresh) ══
+(function() {
+  var amb = document.getElementById('ambientAudio');
+  if (!amb) return;
+  // sessionStorage resets when tab is closed — so sound plays once per browser session
+  if (!sessionStorage.getItem('aurum-played')) {
+    sessionStorage.setItem('aurum-played', '1');
+    amb.volume = 0.18;
+    // Autoplay needs user gesture on some browsers — try on first click/scroll
+    var played = false;
+    function tryPlay() {
+      if (played) return;
+      played = true;
+      amb.play().catch(function(){});
+      document.removeEventListener('click', tryPlay);
+      document.removeEventListener('scroll', tryPlay);
+      document.removeEventListener('keydown', tryPlay);
+    }
+    document.addEventListener('click', tryPlay, { once: true });
+    document.addEventListener('scroll', tryPlay, { once: true });
+    document.addEventListener('keydown', tryPlay, { once: true });
+    // Also try immediately (works on some browsers)
+    amb.play().catch(function(){});
+  }
+})();
+
+// ══ CLEAR CHAT ══
+var aiClearBtn = document.getElementById('aiClear');
+if (aiClearBtn) {
+  aiClearBtn.addEventListener('click', function() {
+    window._aiHistory = [];
+    try { localStorage.removeItem('aurum-chat-history'); } catch(e) {}
+    aiMessages.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Conversation cleared. How may I assist you?</div></div>';
+    document.getElementById('aiSuggestions').style.display = 'flex';
+  });
+}
+
+// ══ QUICK SUGGEST HIDE ON FIRST MESSAGE ══
 async function sendAI() {
   const text = aiInput.value.trim();
   if (!text) return;
@@ -718,10 +797,20 @@ async function sendAI() {
     typing.classList.remove('ai-typing');
     if (data.success) {
       const reply = data.data.response || data.data.reply || data.data.message || '';
-      typing.querySelector('.ai-msg-bubble').innerHTML = reply;
+
+      // Fix mixed language issue: if user wrote Arabic, force-clean Japanese chars
+      let cleanedReply = reply;
+      // Remove any CJK characters that sneak into Arabic responses
+      if (/[؀-ۿ]/.test(text)) {
+        cleanedReply = reply.replace(/[　-鿿豈-﫿]/g, '').replace(/\s+/g,' ').trim();
+      }
+      typing.querySelector('.ai-msg-bubble').innerHTML = cleanedReply;
       window._aiHistory.push({ role: 'user', content: text });
-      window._aiHistory.push({ role: 'assistant', content: reply });
+      window._aiHistory.push({ role: 'assistant', content: cleanedReply });
       if (window._aiHistory.length > 32) window._aiHistory = window._aiHistory.slice(-32);
+      try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
+      // Persist conversation
+      try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
 
       // Handle navigation/booking actions
       if (data.data.action) {
