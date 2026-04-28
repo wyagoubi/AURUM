@@ -3,414 +3,377 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AURUM — Sign In</title>
-  <link rel="stylesheet" href="auth.css"/>
+  <title>AURUM — Luxury Hotel Booking</title>
+  <link rel="stylesheet" href="styles.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
 </head>
 <body class="dark-mode">
 
-<!-- Background Effects -->
-<div class="auth-bg">
-  <div class="auth-bg-orb auth-bg-orb-1"></div>
-  <div class="auth-bg-orb auth-bg-orb-2"></div>
-  <div class="auth-bg-orb auth-bg-orb-3"></div>
-  <div class="auth-bg-orb auth-bg-orb-4"></div>
-  <div class="auth-bg-grid"></div>
-  <div class="auth-particles">
-    <div class="auth-particle p1"></div>
-    <div class="auth-particle p2"></div>
-    <div class="auth-particle p3"></div>
-    <div class="auth-particle p4"></div>
-    <div class="auth-particle p5"></div>
-    <div class="auth-particle p6"></div>
-    <div class="auth-particle p7"></div>
-    <div class="auth-particle p8"></div>
-    <div class="auth-particle p9"></div>
-    <div class="auth-particle p10"></div>
-    <div class="auth-particle p11"></div>
-    <div class="auth-particle p12"></div>
-    <div class="auth-particle p13"></div>
-    <div class="auth-particle p14"></div>
-    <div class="auth-particle p15"></div>
-    <div class="auth-particle p16"></div>
-    <div class="auth-particle p17"></div>
-    <div class="auth-particle p18"></div>
-    <div class="auth-particle p19"></div>
-    <div class="auth-particle p20"></div>
-  </div>
-  <div class="auth-lines">
-    <div class="auth-line auth-line-1"></div>
-    <div class="auth-line auth-line-2"></div>
-    <div class="auth-line auth-line-3"></div>
-    <div class="auth-line auth-line-4"></div>
-    <div class="auth-line auth-line-5"></div>
-    <div class="auth-line auth-line-6"></div>
-    <div class="auth-line auth-line-7"></div>
-    <div class="auth-line auth-line-8"></div>
-    <div class="auth-line auth-line-9"></div>
-    <div class="auth-line auth-line-10"></div>
-  </div>
-</div>
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
 
-<div class="auth-center-wrapper">
-  <!-- Theme Toggle -->
-  <button class="theme-toggle-btn" id="themeToggle" title="Toggle theme">
-    <span id="themeIcon">☀</span>
+  <!-- AMBIENT AUDIO - generated via Web Audio API, no external files -->
+  <audio id="ambientAudio" loop preload="none"></audio>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <div class="logo">AUR<span>UM</span></div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    <ul class="nav-links">
+      <li><a href="#" class="nav-link active" data-page="home">Discover</a></li>
+      <li><a href="#" class="nav-link" data-page="results">Hotels</a></li>
+      <li><a href="reservations.html" class="nav-link nav-link-auth hidden" id="navResLink">My Reservations</a></li>
+      <li><a href="owner.html" class="nav-link">List Property</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme"><span id="themeIcon">☀</span></button>
+      <div id="navUser">
+        <a href="auth.html" class="nav-btn">Sign In</a>
+        <a href="auth.html?role=owner" class="nav-btn nav-btn-owner">Owner</a>
+      </div>
+      <div class="nav-user-logged hidden" id="navUserLogged">
+        <div class="nav-avatar" id="navAvatar">AU</div>
+        <span class="nav-username" id="navUsername">User</span>
+        <a href="reservations.html" class="nav-btn nav-btn-reservations" id="navResBtn">My Stays</a>
+        <button class="nav-signout" id="navSignout">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE: HOME -->
+  <div class="page active" id="page-home">
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-grid"></div>
+      <div class="hero-orb hero-orb-1"></div>
+      <div class="hero-orb hero-orb-2"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">
+          <span class="title-line">Where Luxury</span>
+          <span class="title-line italic"><em>Finds You</em></span>
+        </h1>
+        <p class="hero-sub">AI-matched stays tailored to your every desire.<br/>From boutique retreats to iconic grand hotels.</p>
+        <div class="search-container">
+          <div class="search-grid">
+            <div class="search-field">
+              <label class="search-label">Destination</label>
+              <input class="search-input" id="s-location" type="text" placeholder="Paris, Algiers, Dubai…"/>
+            </div>
+            <div class="search-field">
+              <label class="search-label">Rooms</label>
+              <div class="custom-select" id="roomsSelect">
+                <div class="custom-select-trigger"><span class="custom-select-value">1 Room</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-option selected" data-value="1">1 Room</div>
+                  <div class="custom-select-option" data-value="2">2 Rooms</div>
+                  <div class="custom-select-option" data-value="3">3 Rooms</div>
+                  <div class="custom-select-option" data-value="4">4 Rooms</div>
+                  <div class="custom-select-option" data-value="5">5+ Rooms</div>
+                </div>
+              </div>
+              <select class="search-select-hidden" id="s-rooms" style="display:none">
+                <option value="1">1 Room</option><option value="2">2 Rooms</option>
+                <option value="3">3 Rooms</option><option value="4">4 Rooms</option><option value="5">5+ Rooms</option>
+              </select>
+            </div>
+            <div class="search-field">
+              <label class="search-label">Children</label>
+              <div class="custom-select" id="childrenSelect">
+                <div class="custom-select-trigger"><span class="custom-select-value">None</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-option selected" data-value="0">None</div>
+                  <div class="custom-select-option" data-value="1">1 Child</div>
+                  <div class="custom-select-option" data-value="2">2 Children</div>
+                  <div class="custom-select-option" data-value="3">3 Children</div>
+                  <div class="custom-select-option" data-value="4">4+</div>
+                </div>
+              </div>
+              <select class="search-select-hidden" id="s-children" style="display:none">
+                <option value="0">None</option><option value="1">1 Child</option>
+                <option value="2">2 Children</option><option value="3">3 Children</option><option value="4">4+</option>
+              </select>
+            </div>
+            <div class="search-field">
+              <label class="search-label">Budget / Night</label>
+              <div class="custom-select custom-select-wide" id="budgetSelect">
+                <div class="custom-select-trigger"><span class="custom-select-value">Any</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                <div class="custom-select-dropdown">
+                  <div class="custom-select-option selected" data-value="any">Any</div>
+                  <div class="custom-select-option" data-value="100">Up to $100</div>
+                  <div class="custom-select-option" data-value="300">Up to $300</div>
+                  <div class="custom-select-option" data-value="500">Up to $500</div>
+                  <div class="custom-select-option" data-value="1000">Up to $1,000</div>
+                  <div class="custom-select-option" data-value="1001">$1,000+</div>
+                </div>
+              </div>
+              <select class="search-select-hidden" id="s-price" style="display:none">
+                <option value="any">Any</option><option value="100">Up to $100</option>
+                <option value="300">Up to $300</option><option value="500">Up to $500</option>
+                <option value="1000">Up to $1000</option><option value="1001">$1000+</option>
+              </select>
+            </div>
+            <div class="search-field search-field-btn">
+              <button class="btn-gold" id="searchBtn">
+                <span>Search</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
+    </section>
+
+    <!-- AI Strip -->
+    <section class="ai-strip">
+      <div class="ai-strip-inner">
+        <div class="ai-icon">
+          <svg viewBox="0 0 40 40" fill="none" style="color:var(--gold)"><circle cx="20" cy="20" r="19" stroke="currentColor" stroke-width="1"/><path d="M12 20h16M20 12v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.3"/></svg>
+        </div>
+        <div class="ai-strip-text">
+          <div class="ai-strip-label">Powered by AI</div>
+          <div class="ai-strip-desc">Tell our concierge AI exactly what you're looking for — and let it find your perfect stay.</div>
+        </div>
+        <button class="btn-outline" id="openAiChat">Ask the AI Concierge →</button>
+      </div>
+    </section>
+
+    <!-- Featured Destinations with real hotel images -->
+    <section class="featured-section">
+      <div class="container">
+        <div class="section-header"><div class="section-line"></div><span class="section-label">Featured Destinations</span></div>
+        <h2 class="section-title">The World's Most<br/><em>Coveted Addresses</em></h2>
+        <div class="featured-grid">
+          <div class="featured-card large" data-dest="Paris">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">France</div><div class="featured-city">Paris</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="London">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">United Kingdom</div><div class="featured-city">London</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Marrakesh">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Morocco</div><div class="featured-city">Marrakesh</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Tokyo">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Japan</div><div class="featured-city">Tokyo</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Maldives">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Maldives</div><div class="featured-city">Maldives</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Singapore">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Singapore</div><div class="featured-city">Singapore</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Florence">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Italy</div><div class="featured-city">Florence</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Aspen">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1548777123-e216912df7d8?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">USA</div><div class="featured-city">Aspen</div><div class="featured-count">2 Properties</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why -->
+    <section class="why-section">
+      <div class="container">
+        <div class="why-grid">
+          <div class="why-text">
+            <div class="section-header"><div class="section-line"></div><span class="section-label">Why AURUM</span></div>
+            <h2 class="section-title">Booking Reimagined<br/><em>by Intelligence</em></h2>
+            <p class="why-desc">Our AI doesn't just match filters — it understands context, preference, and desire to surface the properties that will exceed your expectations.</p>
+          </div>
+          <div class="why-features">
+            <div class="why-feat"><div class="why-feat-icon">✦</div><div><div class="why-feat-title">AI-Powered Matching</div><div class="why-feat-desc">Natural language search understands nuance, not just keywords.</div></div></div>
+            <div class="why-feat"><div class="why-feat-icon">◈</div><div><div class="why-feat-title">Curated Properties Only</div><div class="why-feat-desc">Every listing is verified and held to AURUM's quality standards.</div></div></div>
+            <div class="why-feat"><div class="why-feat-icon">⬡</div><div><div class="why-feat-title">Instant Confirmation</div><div class="why-feat-desc">Real-time availability with instant digital booking confirmation.</div></div></div>
+            <div class="why-feat"><div class="why-feat-icon">◇</div><div><div class="why-feat-title">24/7 Concierge Support</div><div class="why-feat-desc">Human and AI concierge available before and during your stay.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="logo" style="margin-bottom:12px">AUR<span>UM</span></div>
+        <p class="footer-tagline">The art of exceptional stays.</p>
+        <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a><a href="#">Press</a></div>
+        <p class="footer-copy">© 2025 AURUM Hospitality Group. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- PAGE: RESULTS -->
+  <div class="page" id="page-results">
+    <div class="page-top-spacer"></div>
+    <div class="container">
+      <div class="results-header">
+        <div>
+          <div style="color:var(--gold);letter-spacing:3px;font-size:10px;text-transform:uppercase;margin-bottom:8px;">Search Results</div>
+          <h2 class="section-title" id="resultsTitle">Hotels in <em>Paris</em></h2>
+          <p class="results-meta" id="resultsMeta">Showing 0 properties</p>
+        </div>
+        <select class="filter-select" id="sortFilter">
+          <option value="recommended">Recommended</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="rating">Top Rated</option>
+        </select>
+      </div>
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+  </div>
+
+  <!-- AI MODAL — redesigned chat -->
+  <div class="ai-modal" id="aiModal">
+    <div class="ai-modal-backdrop" id="aiBackdrop"></div>
+    <div class="ai-modal-window">
+      <div class="ai-modal-header">
+        <div class="ai-modal-title-wrap">
+          <div class="ai-avatar-ring">
+            <div class="ai-avatar-inner">A</div>
+            <div class="ai-pulse-ring"></div>
+          </div>
+          <div>
+            <div class="ai-modal-title">AURUM Concierge</div>
+            <div class="ai-modal-status">Online — here to assist</div>
+          </div>
+        </div>
+        <div class="ai-modal-actions">
+          <button class="ai-clear-btn" id="aiClear" title="Clear conversation">↺</button>
+          <button class="ai-modal-close" id="aiClose">✕</button>
+        </div>
+      </div>
+      <div class="ai-messages" id="aiMessages">
+        <div class="ai-msg ai-msg--bot">
+          <div class="ai-msg-avatar">A</div>
+          <div class="ai-msg-bubble">Welcome to AURUM. I'm your personal concierge — tell me about your ideal stay. Where are you dreaming of going?</div>
+        </div>
+      </div>
+      <div class="ai-suggestions-row" id="aiSuggestions">
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Paris honeymoon 🌹</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Beach & sun 🌊</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Best budget hotel</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">My reservations</button>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" class="ai-input" id="aiInput" placeholder="Ask anything — hotels, destinations, bookings…"/>
+        <button class="ai-send" id="aiSend">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GALLERY MODAL -->
+  <div class="gallery-modal" id="galleryModal">
+    <div class="gallery-backdrop" id="galleryBackdrop"></div>
+    <div class="gallery-window">
+      <div class="gallery-header">
+        <div>
+          <div class="gallery-hotel-name" id="galleryHotelName">Hotel Name</div>
+          <div class="gallery-hotel-loc" id="galleryHotelLoc">City, Country</div>
+        </div>
+        <button class="gallery-close" id="galleryClose">✕</button>
+      </div>
+      <div class="gallery-tabs">
+        <button class="gtab active" data-tab="hotel">Hotel</button>
+        <button class="gtab" data-tab="rooms">Rooms</button>
+        <button class="gtab" data-tab="amenities">Amenities</button>
+      </div>
+      <div class="gallery-body">
+        <div class="gallery-main-wrap">
+          <button class="gal-arrow gal-prev" id="galPrev">‹</button>
+          <div class="gallery-main-img" id="galleryMainImg">
+            <div class="gal-img-inner" id="galImgInner"></div>
+            <div class="gal-img-label" id="galImgLabel"></div>
+          </div>
+          <button class="gal-arrow gal-next" id="galNext">›</button>
+        </div>
+        <div class="gallery-thumbs" id="galleryThumbs"></div>
+      </div>
+      <div class="gallery-footer">
+        <div class="gallery-price-info">
+          <span class="gal-from">from</span>
+          <span class="gal-price" id="galPrice">$450</span>
+          <span class="gal-per">/night</span>
+        </div>
+        <button class="btn-gold" id="galBookBtn">Reserve This Hotel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOKING MODAL -->
+  <div class="booking-modal" id="bookingModal">
+    <div class="booking-backdrop" id="bookingBackdrop"></div>
+    <div class="booking-window">
+      <button class="ai-modal-close" id="bookingClose">✕</button>
+      <div class="booking-hotel-name" id="modalHotelName">Hotel Name</div>
+      <div class="booking-hotel-loc" id="modalHotelLoc">Location</div>
+      <div class="booking-form">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Check-in</label><input type="date" class="form-input" id="bookingCheckin"/></div>
+          <div class="form-group"><label class="form-label">Check-out</label><input type="date" class="form-input" id="bookingCheckout"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Rooms</label><select class="form-input" id="bookingRooms"><option>1</option><option>2</option><option>3</option></select></div>
+          <div class="form-group"><label class="form-label">Room Type</label><select class="form-input" id="bookingRoomType"><option>Deluxe Room</option><option>Junior Suite</option><option>Grand Suite</option><option>Presidential Suite</option></select></div>
+        </div>
+        <div class="booking-summary">
+          <div class="summary-row"><span>Room Rate</span><span id="summaryRate">$350/night</span></div>
+          <div class="summary-row"><span>Nights</span><span id="summaryNights">—</span></div>
+          <div class="summary-row summary-total"><span>Total</span><span id="summaryTotal">—</span></div>
+        </div>
+        <button class="btn-gold full-width" id="confirmBooking">Confirm Reservation</button>
+        <div class="payment-section hidden" id="paymentSection">
+          <h3 style="margin:12px 0 8px;color:var(--text);font-size:14px;">Payment</h3>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Name on Card</label><input type="text" class="form-input" id="payName" placeholder="Full name"/></div>
+            <div class="form-group"><label class="form-label">Card Number</label><input type="text" class="form-input" id="payNumber" placeholder="4242 4242 4242 4242"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Expiry</label><input type="text" class="form-input" id="payExp" placeholder="MM/YY"/></div>
+            <div class="form-group"><label class="form-label">CVC</label><input type="text" class="form-input" id="payCvc" placeholder="123"/></div>
+          </div>
+          <button class="btn-gold full-width" id="payConfirmBtn">Pay & Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Floating AI Chat Button -->
+  <button class="ai-fab" id="aiFab" title="Chat with AI Concierge">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span class="ai-fab-label">Concierge</span>
+    <span class="ai-fab-dot"></span>
   </button>
 
-  <!-- Logo -->
-  <a href="index.html" class="auth-logo animate-logo">AUR<span>UM</span></a>
-
-  <!-- Auth Card -->
-  <div class="auth-card animate-card">
-    <!-- Corner Accents -->
-    <div class="corner-dot top-left"></div>
-    <div class="corner-dot top-right"></div>
-    <div class="corner-dot bottom-right"></div>
-    <div class="corner-dot bottom-left"></div>
-    
-    <!-- Floating Particles -->
-    <div class="particle particle-1"></div>
-    <div class="particle particle-2"></div>
-    <div class="particle particle-3"></div>
-    <div class="particle particle-4"></div>
-
-    <!-- Role Switcher -->
-    <div class="role-switcher animate-role-switcher">
-      <button class="role-btn active" id="roleGuest">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        <span class="role-btn-text">Guest</span>
-      </button>
-      <button class="role-btn" id="roleOwner">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="2" y="7" width="20" height="14" rx="2"/>
-          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        </svg>
-        <span class="role-btn-text">Hotel Owner</span>
-      </button>
-    </div>
-
-    <!-- GUEST SECTION -->
-    <div id="guestSection">
-      <div class="auth-tabs animate-tabs">
-        <button class="auth-tab active" id="tabLogin">
-          <span class="tab-text">Sign In</span>
-        </button>
-        <button class="auth-tab" id="tabRegister">
-          <span class="tab-text">Create Account</span>
-        </button>
-      </div>
-
-      <!-- Guest Login -->
-      <div class="auth-form-wrap" id="loginWrap">
-        <div class="auth-form-title">
-          <span class="title-line">Welcome</span>
-          <span class="title-line italic"><em>Back</em></span>
-        </div>
-        <p class="auth-form-sub">Sign in to continue your journey.</p>
-
-        <div class="field-g animate-field" style="--field-delay:0">
-          <label class="field-l">Email</label>
-          <div class="field-icon-wrap">
-            <svg class="field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            <input type="email" class="field-i" id="loginEmail" placeholder="you@example.com"/>
-          </div>
-          <div class="field-error" id="loginEmailErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:1">
-          <label class="field-l">Password</label>
-          <div class="field-icon-wrap">
-            <svg class="field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-            <input type="password" class="field-i" id="loginPass" placeholder="••••••••"/>
-            <button class="pw-toggle" type="button" onclick="togglePw('loginPass',this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          <div class="field-error" id="loginPassErr"></div>
-        </div>
-
-        <div class="auth-options animate-field" style="--field-delay:2">
-          <label class="remember-me">
-            <input type="checkbox" class="custom-checkbox"/>
-            <span class="checkbox-custom"></span>
-            Remember me
-          </label>
-          <a href="#" class="forgot-link">Forgot?</a>
-        </div>
-
-        <button class="btn-auth animate-btn-auth" id="loginBtn" style="--field-delay:3">
-          <span class="btn-auth-text">Sign In</span>
-          <span class="btn-auth-arrow">→</span>
-        </button>
-
-        <div class="auth-divider animate-field" style="--field-delay:4">
-          <span>or</span>
-        </div>
-
-        <div class="social-btns animate-field" style="--field-delay:5">
-          <button class="social-btn" onclick="socialLogin('Google')">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Google
-          </button>
-          <button class="social-btn" onclick="socialLogin('Apple')">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-            </svg>
-            Apple
-          </button>
-        </div>
-
-        <p class="switch-link animate-field" style="--field-delay:6">
-          No account? <a href="#" id="goRegisterLink">Create one →</a>
-        </p>
-      </div>
-
-      <!-- Guest Register -->
-      <div class="auth-form-wrap hidden" id="registerWrap">
-        <div class="auth-form-title">
-          <span class="title-line">Join</span>
-          <span class="title-line italic"><em>AURUM</em></span>
-        </div>
-        <p class="auth-form-sub">Create your account to unlock exclusive rates.</p>
-
-        <div class="field-row-2 animate-field" style="--field-delay:0">
-          <div class="field-g">
-            <label class="field-l">First Name</label>
-            <input type="text" class="field-i" id="regFirst" placeholder="Alexandre"/>
-            <div class="field-error" id="regFirstErr"></div>
-          </div>
-          <div class="field-g">
-            <label class="field-l">Last Name</label>
-            <input type="text" class="field-i" id="regLast" placeholder="Fontaine"/>
-            <div class="field-error" id="regLastErr"></div>
-          </div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:1">
-          <label class="field-l">Email</label>
-          <input type="email" class="field-i" id="regEmail" placeholder="you@example.com"/>
-          <div class="field-error" id="regEmailErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:2">
-          <label class="field-l">Password</label>
-          <div class="field-icon-wrap">
-            <input type="password" class="field-i" id="regPass" placeholder="Min 8 characters" oninput="checkStrength(this.value)"/>
-            <button class="pw-toggle" type="button" onclick="togglePw('regPass',this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
-          <div class="strength-label" id="strengthLabel"></div>
-          <div class="field-error" id="regPassErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:3">
-          <label class="field-l">Confirm Password</label>
-          <div class="field-icon-wrap">
-            <input type="password" class="field-i" id="regPass2" placeholder="Repeat password"/>
-            <button class="pw-toggle" type="button" onclick="togglePw('regPass2',this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          <div class="field-error" id="regPass2Err"></div>
-        </div>
-
-        <label class="agree-check animate-field" style="--field-delay:4">
-          <input type="checkbox" id="agreeTerms" class="custom-checkbox"/>
-          <span class="checkbox-custom"></span>
-          <span>I agree to <a href="#">Terms</a></span>
-        </label>
-        <div class="field-error" id="agreeErr"></div>
-
-        <button class="btn-auth animate-btn-auth" id="registerBtn" style="--field-delay:5">
-          <span class="btn-auth-text">Create Account</span>
-          <span class="btn-auth-arrow">→</span>
-        </button>
-
-        <p class="switch-link animate-field" style="--field-delay:6">
-          Already have an account? <a href="#" id="goLoginLink">Sign in →</a>
-        </p>
-      </div>
-    </div>
-
-    <!-- OWNER SECTION -->
-    <div id="ownerSection" class="hidden">
-      <div class="owner-auth-badge animate-owner-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        Hotel Owner
-      </div>
-
-      <div class="auth-tabs animate-tabs">
-        <button class="auth-tab active" id="ownerTabLogin">
-          <span class="tab-text">Owner Sign In</span>
-        </button>
-        <button class="auth-tab" id="ownerTabRegister">
-          <span class="tab-text">Register</span>
-        </button>
-      </div>
-
-      <!-- Owner Login -->
-      <div class="auth-form-wrap" id="ownerLoginWrap">
-        <div class="auth-form-title">
-          <span class="title-line">Owner</span>
-          <span class="title-line italic"><em>Dashboard</em></span>
-        </div>
-        <p class="auth-form-sub">Manage your properties and bookings.</p>
-
-        <div class="field-g animate-field" style="--field-delay:0">
-          <label class="field-l">Business Email</label>
-          <div class="field-icon-wrap">
-            <svg class="field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            <input type="email" class="field-i" id="ownerLoginEmail" placeholder="hotel@example.com"/>
-          </div>
-          <div class="field-error" id="ownerLoginEmailErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:1">
-          <label class="field-l">Password</label>
-          <div class="field-icon-wrap">
-            <svg class="field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-            <input type="password" class="field-i" id="ownerLoginPass" placeholder="••••••••"/>
-            <button class="pw-toggle" type="button" onclick="togglePw('ownerLoginPass',this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          <div class="field-error" id="ownerLoginPassErr"></div>
-        </div>
-
-        <button class="btn-auth owner-btn animate-btn-auth" id="ownerLoginBtn" style="--field-delay:2">
-          <span class="btn-auth-text">Access Dashboard</span>
-          <span class="btn-auth-arrow">→</span>
-        </button>
-
-        <p class="switch-link animate-field" style="--field-delay:3">
-          New partner? <a href="#" id="goOwnerRegisterLink">Register →</a>
-        </p>
-      </div>
-
-      <!-- Owner Register -->
-      <div class="auth-form-wrap hidden" id="ownerRegisterWrap">
-        <div class="auth-form-title">
-          <span class="title-line">Partner</span>
-          <span class="title-line italic"><em>Registration</em></span>
-        </div>
-        <p class="auth-form-sub">List and manage your properties.</p>
-
-        <div class="field-row-2 animate-field" style="--field-delay:0">
-          <div class="field-g">
-            <label class="field-l">First Name</label>
-            <input type="text" class="field-i" id="ownerFirst" placeholder="Sofia"/>
-            <div class="field-error" id="ownerFirstErr"></div>
-          </div>
-          <div class="field-g">
-            <label class="field-l">Last Name</label>
-            <input type="text" class="field-i" id="ownerLast" placeholder="Marchetti"/>
-            <div class="field-error" id="ownerLastErr"></div>
-          </div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:1">
-          <label class="field-l">Hotel Name</label>
-          <input type="text" class="field-i" id="ownerHotel" placeholder="The Grand Palazzo"/>
-          <div class="field-error" id="ownerHotelErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:2">
-          <label class="field-l">Email</label>
-          <input type="email" class="field-i" id="ownerEmail" placeholder="sofia@hotel.com"/>
-          <div class="field-error" id="ownerEmailErr"></div>
-        </div>
-
-        <div class="field-g animate-field" style="--field-delay:3">
-          <label class="field-l">Password</label>
-          <div class="field-icon-wrap">
-            <input type="password" class="field-i" id="ownerPass" placeholder="Min 8 characters" oninput="checkOwnerStrength(this.value)"/>
-            <button class="pw-toggle" type="button" onclick="togglePw('ownerPass',this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
-          <div class="strength-bar"><div class="strength-fill" id="ownerStrFill"></div></div>
-          <div class="strength-label" id="ownerStrLabel"></div>
-          <div class="field-error" id="ownerPassErr"></div>
-        </div>
-
-        <label class="agree-check animate-field" style="--field-delay:4">
-          <input type="checkbox" id="ownerAgreeTerms" class="custom-checkbox"/>
-          <span class="checkbox-custom"></span>
-          <span>I agree to <a href="#">Partner Terms</a></span>
-        </label>
-        <div class="field-error" id="ownerAgreeErr"></div>
-
-        <button class="btn-auth owner-btn animate-btn-auth" id="ownerRegisterBtn" style="--field-delay:5">
-          <span class="btn-auth-text">Create Owner Account</span>
-          <span class="btn-auth-arrow">→</span>
-        </button>
-
-        <p class="switch-link animate-field" style="--field-delay:6">
-          Already registered? <a href="#" id="goOwnerLoginLink">Sign in →</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Back Link -->
-  <a href="index.html" class="auth-back animate-back">← Back to Discover</a>
-</div>
-
-<!-- Success Overlay -->
-<div class="success-overlay" id="successOverlay">
-  <div class="success-content">
-    <div class="success-checkmark">
-      <svg viewBox="0 0 50 50" width="50" height="50">
-        <circle cx="25" cy="25" r="23" fill="none" stroke="currentColor" stroke-width="2" class="checkmark-circle"/>
-        <path d="M14 27l7 7 15-15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="checkmark-check"/>
-      </svg>
-    </div>
-    <div class="success-text" id="successText">Welcome back!</div>
-    <div class="success-subtext" id="successSubtext">Redirecting...</div>
-  </div>
-</div>
-
-<script src="auth.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
