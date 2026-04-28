@@ -12,6 +12,14 @@
   <div class="cursor" id="cursor"></div>
   <div class="cursor-ring" id="cursorRing"></div>
 
+  <!-- AMBIENT AUDIO -->
+  <audio id="ambientAudio" loop preload="auto">
+    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_1a748b4cd9.mp3" type="audio/mpeg"/>
+  </audio>
+  <audio id="welcomeAudio" preload="auto">
+    <source src="https://cdn.pixabay.com/audio/2022/11/22/audio_fbc0e41847.mp3" type="audio/mpeg"/>
+  </audio>
+
   <!-- NAV -->
   <nav id="navbar">
     <div class="logo">AUR<span>UM</span></div>
@@ -19,17 +27,19 @@
     <ul class="nav-links">
       <li><a href="#" class="nav-link active" data-page="home">Discover</a></li>
       <li><a href="#" class="nav-link" data-page="results">Hotels</a></li>
-      <li><a href="reservations.html" class="nav-link nav-link-auth hidden">My Reservations</a></li>
+      <li><a href="reservations.html" class="nav-link nav-link-auth hidden" id="navResLink">My Reservations</a></li>
       <li><a href="owner.html" class="nav-link">List Property</a></li>
     </ul>
     <div class="nav-actions">
-      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
-        <span id="themeIcon">☀</span>
-      </button>
-      <div id="navUser"><a href="auth.html" class="nav-btn">Sign In</a><a href="auth.html?role=owner" class="nav-btn nav-btn-owner">Owner Login</a></div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme"><span id="themeIcon">☀</span></button>
+      <div id="navUser">
+        <a href="auth.html" class="nav-btn">Sign In</a>
+        <a href="auth.html?role=owner" class="nav-btn nav-btn-owner">Owner</a>
+      </div>
       <div class="nav-user-logged hidden" id="navUserLogged">
         <div class="nav-avatar" id="navAvatar">AU</div>
         <span class="nav-username" id="navUsername">User</span>
+        <a href="reservations.html" class="nav-btn nav-btn-reservations" id="navResBtn">My Stays</a>
         <button class="nav-signout" id="navSignout">Sign Out</button>
       </div>
     </div>
@@ -57,10 +67,7 @@
             <div class="search-field">
               <label class="search-label">Rooms</label>
               <div class="custom-select" id="roomsSelect">
-                <div class="custom-select-trigger">
-                  <span class="custom-select-value">1 Room</span>
-                  <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                </div>
+                <div class="custom-select-trigger"><span class="custom-select-value">1 Room</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
                 <div class="custom-select-dropdown">
                   <div class="custom-select-option selected" data-value="1">1 Room</div>
                   <div class="custom-select-option" data-value="2">2 Rooms</div>
@@ -77,10 +84,7 @@
             <div class="search-field">
               <label class="search-label">Children</label>
               <div class="custom-select" id="childrenSelect">
-                <div class="custom-select-trigger">
-                  <span class="custom-select-value">None</span>
-                  <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                </div>
+                <div class="custom-select-trigger"><span class="custom-select-value">None</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
                 <div class="custom-select-dropdown">
                   <div class="custom-select-option selected" data-value="0">None</div>
                   <div class="custom-select-option" data-value="1">1 Child</div>
@@ -97,17 +101,14 @@
             <div class="search-field">
               <label class="search-label">Budget / Night</label>
               <div class="custom-select custom-select-wide" id="budgetSelect">
-                <div class="custom-select-trigger">
-                  <span class="custom-select-value">Any</span>
-                  <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                </div>
+                <div class="custom-select-trigger"><span class="custom-select-value">Any</span><svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
                 <div class="custom-select-dropdown">
                   <div class="custom-select-option selected" data-value="any">Any</div>
                   <div class="custom-select-option" data-value="100">Up to $100</div>
                   <div class="custom-select-option" data-value="300">Up to $300</div>
                   <div class="custom-select-option" data-value="500">Up to $500</div>
-                  <div class="custom-select-option" data-value="1000">Up to $1000</div>
-                  <div class="custom-select-option" data-value="1001">$1000+</div>
+                  <div class="custom-select-option" data-value="1000">Up to $1,000</div>
+                  <div class="custom-select-option" data-value="1001">$1,000+</div>
                 </div>
               </div>
               <select class="search-select-hidden" id="s-price" style="display:none">
@@ -142,27 +143,59 @@
       </div>
     </section>
 
-    <!-- Featured -->
+    <!-- Featured Destinations with real hotel images -->
     <section class="featured-section">
       <div class="container">
         <div class="section-header"><div class="section-line"></div><span class="section-label">Featured Destinations</span></div>
         <h2 class="section-title">The World's Most<br/><em>Coveted Addresses</em></h2>
         <div class="featured-grid">
           <div class="featured-card large" data-dest="Paris">
-            <div class="featured-img" style="background:linear-gradient(135deg,#1a1208,#2a1f0a)"><div class="dest-art paris-art"></div></div>
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
             <div class="featured-info"><div class="featured-country">France</div><div class="featured-city">Paris</div><div class="featured-count">2 Properties</div></div>
           </div>
-          <div class="featured-card" data-dest="Dubai">
-            <div class="featured-img" style="background:linear-gradient(135deg,#0a1520,#0d2233)"><div class="dest-art dubai-art"></div></div>
-            <div class="featured-info"><div class="featured-country">UAE</div><div class="featured-city">Dubai</div><div class="featured-count">2 Properties</div></div>
+          <div class="featured-card" data-dest="London">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">United Kingdom</div><div class="featured-city">London</div><div class="featured-count">2 Properties</div></div>
           </div>
-          <div class="featured-card" data-dest="Algiers">
-            <div class="featured-img" style="background:linear-gradient(135deg,#0a1a0e,#0e2614)"><div class="dest-art algiers-art"></div></div>
-            <div class="featured-info"><div class="featured-country">Algeria</div><div class="featured-city">Algiers</div><div class="featured-count">2 Properties</div></div>
+          <div class="featured-card" data-dest="Marrakesh">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Morocco</div><div class="featured-city">Marrakesh</div><div class="featured-count">2 Properties</div></div>
           </div>
-          <div class="featured-card" data-dest="Istanbul">
-            <div class="featured-img" style="background:linear-gradient(135deg,#1a0a08,#2a1210)"><div class="dest-art istanbul-art"></div></div>
-            <div class="featured-info"><div class="featured-country">Turkey</div><div class="featured-city">Istanbul</div><div class="featured-count">2 Properties</div></div>
+          <div class="featured-card" data-dest="Tokyo">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Japan</div><div class="featured-city">Tokyo</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Maldives">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Maldives</div><div class="featured-city">Maldives</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Singapore">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Singapore</div><div class="featured-city">Singapore</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Florence">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">Italy</div><div class="featured-city">Florence</div><div class="featured-count">2 Properties</div></div>
+          </div>
+          <div class="featured-card" data-dest="Aspen">
+            <div class="featured-img" style="background:url('https://images.unsplash.com/photo-1548777123-e216912df7d8?w=600&q=80') center/cover">
+              <div class="featured-img-overlay"></div>
+            </div>
+            <div class="featured-info"><div class="featured-country">USA</div><div class="featured-city">Aspen</div><div class="featured-count">2 Properties</div></div>
           </div>
         </div>
       </div>
@@ -218,21 +251,40 @@
     </div>
   </div>
 
-  <!-- AI MODAL -->
+  <!-- AI MODAL — redesigned chat -->
   <div class="ai-modal" id="aiModal">
     <div class="ai-modal-backdrop" id="aiBackdrop"></div>
     <div class="ai-modal-window">
       <div class="ai-modal-header">
-        <div class="ai-modal-title"><div class="ai-pulse"></div>AI Concierge</div>
-        <button class="ai-modal-close" id="aiClose">✕</button>
+        <div class="ai-modal-title-wrap">
+          <div class="ai-avatar-ring">
+            <div class="ai-avatar-inner">A</div>
+            <div class="ai-pulse-ring"></div>
+          </div>
+          <div>
+            <div class="ai-modal-title">AURUM Concierge</div>
+            <div class="ai-modal-status">Online — here to assist</div>
+          </div>
+        </div>
+        <div class="ai-modal-actions">
+          <button class="ai-clear-btn" id="aiClear" title="Clear conversation">↺</button>
+          <button class="ai-modal-close" id="aiClose">✕</button>
+        </div>
       </div>
       <div class="ai-messages" id="aiMessages">
         <div class="ai-msg ai-msg--bot">
-          <div class="ai-msg-bubble">Welcome to AURUM. I'm your personal concierge — tell me about your ideal stay. Where are you dreaming of going, and what matters most to you?</div>
+          <div class="ai-msg-avatar">A</div>
+          <div class="ai-msg-bubble">Welcome to AURUM. I'm your personal concierge — tell me about your ideal stay. Where are you dreaming of going?</div>
         </div>
       </div>
+      <div class="ai-suggestions-row" id="aiSuggestions">
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Paris honeymoon 🌹</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Beach & sun 🌊</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">Best budget hotel</button>
+        <button class="ai-suggest-btn" onclick="quickAsk(this)">My reservations</button>
+      </div>
       <div class="ai-input-row">
-        <input type="text" class="ai-input" id="aiInput" placeholder="Describe your perfect trip…"/>
+        <input type="text" class="ai-input" id="aiInput" placeholder="Ask anything — hotels, destinations, bookings…"/>
         <button class="ai-send" id="aiSend">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -292,7 +344,7 @@
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Rooms</label><select class="form-input" id="bookingRooms"><option>1</option><option>2</option><option>3</option></select></div>
-          <div class="form-group"><label class="form-label">Room Type</label><select class="form-input" id="bookingRoomType"><option>Deluxe Room</option><option>Junior Suite</option><option>Grand Suite</option></select></div>
+          <div class="form-group"><label class="form-label">Room Type</label><select class="form-input" id="bookingRoomType"><option>Deluxe Room</option><option>Junior Suite</option><option>Grand Suite</option><option>Presidential Suite</option></select></div>
         </div>
         <div class="booking-summary">
           <div class="summary-row"><span>Room Rate</span><span id="summaryRate">$350/night</span></div>
@@ -300,8 +352,6 @@
           <div class="summary-row summary-total"><span>Total</span><span id="summaryTotal">—</span></div>
         </div>
         <button class="btn-gold full-width" id="confirmBooking">Confirm Reservation</button>
-
-        <!-- Payment section (hidden until user proceeds) -->
         <div class="payment-section hidden" id="paymentSection">
           <h3 style="margin:12px 0 8px;color:var(--text);font-size:14px;">Payment</h3>
           <div class="form-row">
@@ -322,10 +372,11 @@
 
   <!-- Floating AI Chat Button -->
   <button class="ai-fab" id="aiFab" title="Chat with AI Concierge">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
     <span class="ai-fab-label">Concierge</span>
+    <span class="ai-fab-dot"></span>
   </button>
 
   <script src="app.js"></script>
