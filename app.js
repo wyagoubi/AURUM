@@ -1,9 +1,8 @@
 /* ═══════════════════════════════════════════════
-   AURUM — app.js (integrated with backend API)
+   AURUM — app.js (متكامل مع api.php)
 ═══════════════════════════════════════════════ */
 
-// ================== API CONFIG ==================
-const API_BASE = 'https://aurum-m4v8.onrender.com/api';
+const API_BASE = '/api.php?route=';  // تغيير المسار
 
 /* ══════════ THEME ══════════ */
 const body = document.body;
@@ -25,9 +24,6 @@ themeToggle.addEventListener('click', () => {
 function setThemeIcon(mode) {
   themeIcon.textContent = mode === 'dark-mode' ? '☀' : '☾';
 }
-
-/* ══════════ CURSOR ══════════ */
-// Custom cursor disabled - using default system cursor
 
 /* ══════════ SESSION ══════════ */
 const navUser       = document.getElementById('navUser');
@@ -73,7 +69,6 @@ function showPage(id) {
 
 navLinks.forEach(link => {
   link.addEventListener('click', e => {
-    if (link.closest('#navUser')) return;
     if (link.dataset.page) { e.preventDefault(); showPage(link.dataset.page); return; }
     if (link.getAttribute('href') === 'owner.html') {
       e.preventDefault();
@@ -87,135 +82,16 @@ navLinks.forEach(link => {
   });
 });
 
-/* ══════════ HOTEL COVER IMAGES ══════════ */
-const HOTEL_COVERS = {
-  'Le Grand Aurum Paris':    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600&q=80',
-  'Aurum Palace London':     'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80',
-  'Aurum Medina Marrakesh':  'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80',
-  'Aurum Sakura Tokyo':      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80',
-  'Aurum Overwater Maldives':'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=600&q=80',
-  'Aurum Summit Aspen':      'https://images.unsplash.com/photo-1548013146-72479768bada?w=600&q=80',
-  'Aurum Duomo Florence':    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80',
-  'Aurum Sentosa Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&q=80',
-  'Aurum Desert Dubai':      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80',
-  'Aurum Bosphorus Istanbul':'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=600&q=80',
-  'Aurum Riviera Santorini': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80',
-  'Aurum Zen Bali':          'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80',
-};
-
-const HOTEL_GALLERY = {
-  'Le Grand Aurum Paris': [
-    {url:'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80', label:'Exterior'},
-    {url:'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80', label:'Lobby'},
-    {url:'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80', label:'Suite'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Restaurant'},
-  ],
-  'Aurum Palace London': [
-    {url:'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80', label:'Exterior'},
-    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
-    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Fine Dining'},
-  ],
-  'Aurum Medina Marrakesh': [
-    {url:'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=800&q=80', label:'Riad Courtyard'},
-    {url:'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80', label:'Rooftop Pool'},
-    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Suite'},
-    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Hammam'},
-  ],
-  'Aurum Sakura Tokyo': [
-    {url:'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', label:'Skyline View'},
-    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
-    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Onsen'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Michelin Dining'},
-  ],
-  'Aurum Overwater Maldives': [
-    {url:'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=800&q=80', label:'Overwater Villa'},
-    {url:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80', label:'Lagoon'},
-    {url:'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=800&q=80', label:'Private Pool'},
-    {url:'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80', label:'Underwater Spa'},
-  ],
-  'Aurum Summit Aspen': [
-    {url:'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80', label:'Mountain View'},
-    {url:'https://images.unsplash.com/photo-1551524559-8af4e6624178?w=800&q=80', label:'Ski Slopes'},
-    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Wine Cellar'},
-  ],
-  'Aurum Duomo Florence': [
-    {url:'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80', label:'Florence View'},
-    {url:'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80', label:'Palazzo Lobby'},
-    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Suite'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Rooftop Dining'},
-  ],
-  'Aurum Sentosa Singapore': [
-    {url:'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&q=80', label:'Infinity Pool'},
-    {url:'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&q=80', label:'Skyline'},
-    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Suite'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Private Beach'},
-  ],
-};
-
-/* ══════════ ACTIVE BOOKINGS SYNC ══════════ */
-let bookedHotelIds = new Set();
-
-function loadBookedHotels() {
-  try {
-    const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
-    const today = new Date(); today.setUTCHours(0,0,0,0);
-    bookedHotelIds = new Set(
-      cached
-        .filter(b => {
-          if (b.status === 'cancelled') return false;
-          const cout = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
-          return cout >= today;
-        })
-        .map(b => Number(b.hotel_id || b.hotelId))
-    );
-  } catch(_) { bookedHotelIds = new Set(); }
-}
-
-async function syncBookingsFromAPI() {
-  const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-  if (!user) return;
-  try {
-    const res = await fetch(`${API_BASE}/bookings/me`, { credentials: 'include' });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.success) {
-      localStorage.setItem('aurum-bookings-cache', JSON.stringify(data.data));
-      loadBookedHotels();
-      // Re-render results if visible
-      const resultsPage = document.getElementById('page-results');
-      if (resultsPage && resultsPage.classList.contains('active')) {
-        const loc = document.getElementById('s-location').value || 'Paris';
-        const rooms = parseInt(document.getElementById('s-rooms').value) || 1;
-        const children = parseInt(document.getElementById('s-children').value) || 0;
-        const price = document.getElementById('s-price').value || 'any';
-        renderResults(filterHotels(loc, rooms, children, price), loc, rooms, children, price);
-      }
-    }
-  } catch(_) {}
-}
-
-/* ══════════ HOTEL DATABASE (loaded from API) ══════════ */
+/* ══════════ HOTEL DATABASE (من API) ══════════ */
 let hotelDatabase = [];
 
 async function loadHotelsFromAPI() {
     try {
-        loadBookedHotels(); // load cached bookings first
-        const res = await fetch(`${API_BASE}/hotels`);
+        const res = await fetch(`${API_BASE}hotels`);
         const data = await res.json();
         if (data.success) {
-            // Enrich with cover images
-            hotelDatabase = data.data.map(h => ({
-              ...h,
-              cover: HOTEL_COVERS[h.name] || null,
-              photos: HOTEL_GALLERY[h.name]
-                ? buildGalleryPhotos(h, HOTEL_GALLERY[h.name])
-                : makePhotos(h.initial || 'AU', h.color || '#1a1208', '#2a1f0a', '#0e0c06'),
-            }));
-            window._hotelsData = hotelDatabase;
+            hotelDatabase = data.data;
             renderResults(filterHotels('Paris', 1, 0, 'any'), 'Paris', 1, 0, 'any');
-            syncBookingsFromAPI(); // sync in background
         } else {
             console.warn('API hotels failed, using local fallback');
             useLocalHotelDatabase();
@@ -224,23 +100,6 @@ async function loadHotelsFromAPI() {
         console.error('Error loading hotels from API', e);
         useLocalHotelDatabase();
     }
-}
-
-function buildGalleryPhotos(hotel, galleryImages) {
-  const c1 = hotel.color || '#1a1208';
-  const rooms = [
-    {url:'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80', label:'Deluxe Room'},
-    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Junior Suite'},
-    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
-    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
-  ];
-  const amenities = [
-    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Spa & Wellness'},
-    {url:'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80', label:'Swimming Pool'},
-    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Fine Dining'},
-    {url:'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=800&q=80', label:'Bar & Lounge'},
-  ];
-  return { hotel: galleryImages, rooms, amenities };
 }
 
 function useLocalHotelDatabase() {
@@ -383,47 +242,16 @@ function renderResults(hotels, loc, rooms, children, price) {
   };
 }
 
-function getHotelBookingInfo(hotelId) {
-  try {
-    const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
-    const today = new Date(); today.setUTCHours(0,0,0,0);
-    const active = cached.find(b => {
-      if (b.status === 'cancelled') return false;
-      const cin  = new Date((b.check_in  || b.checkIn)  + 'T00:00:00Z');
-      const cout = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
-      return Number(b.hotel_id || b.hotelId) === Number(hotelId) && cout >= today;
-    });
-    if (!active) return null;
-    const cin  = new Date((active.check_in  || active.checkIn)  + 'T00:00:00Z');
-    const cout = new Date((active.check_out || active.checkOut) + 'T00:00:00Z');
-    const daysToCheckin  = Math.round((cin  - today) / (1000*60*60*24));
-    const daysToCheckout = Math.round((cout - today) / (1000*60*60*24));
-    if (today >= cin && today < cout) {
-      return { type: 'current', label: `🏨 ${daysToCheckout} night${daysToCheckout!==1?'s':''} remaining` };
-    }
-    if (daysToCheckin <= 1) {
-      return { type: 'imminent', label: daysToCheckin === 0 ? '⏰ Check-in today!' : '⏰ Check-in tomorrow!' };
-    }
-    return { type: 'booked', label: `✦ Booked · ${daysToCheckin} day${daysToCheckin!==1?'s':''} to check-in` };
-  } catch(_) { return null; }
-}
-
 function createHotelCard(hotel, delay=0) {
   const card = document.createElement('div');
   card.className = 'hotel-card';
   card.style.cssText = `animation:fadeUp 0.5s ease ${delay*0.07}s both`;
   const stars = '★'.repeat(hotel.stars)+'☆'.repeat(5-hotel.stars);
-  const bookingInfo = getHotelBookingInfo(hotel.id);
-  const isBooked = !!bookingInfo;
-  const bookedBadge = isBooked
-    ? `<div class="hotel-booked-badge ${bookingInfo.type}">${bookingInfo.label}</div>`
-    : '';
   card.innerHTML = `
-    <div class="hotel-card-img" style="${hotel.cover ? `background:url('${hotel.cover}') center/cover no-repeat` : `background:linear-gradient(135deg,${hotel.color},#1a1a10)`}">
-      <div class="hotel-card-img-inner" style="${hotel.cover ? 'opacity:0' : ''}">${hotel.initial}</div>
+    <div class="hotel-card-img" style="background:linear-gradient(135deg,${hotel.color},#1a1a10)">
+      <div class="hotel-card-img-inner">${hotel.initial}</div>
       <div class="hotel-badge">${hotel.stars} ★</div>
       <button class="hotel-view-photos">📷 View Photos</button>
-      ${bookedBadge}
     </div>
     <div class="hotel-card-body">
       <div class="hotel-card-name">${hotel.name}</div>
@@ -444,7 +272,7 @@ function createHotelCard(hotel, delay=0) {
           <span class="rating-count">${hotel.rating} (${hotel.reviews.toLocaleString()})</span>
         </div>
       </div>
-      <button class="hotel-book-btn${isBooked?' booked-btn':''}">${isBooked ? '✦ View Reservation' : 'Reserve Now'}</button>
+      <button class="hotel-book-btn">Reserve Now</button>
     </div>`;
 
   card.querySelector('.hotel-view-photos').addEventListener('click', e => { e.stopPropagation(); openGallery(hotel); });
@@ -452,11 +280,6 @@ function createHotelCard(hotel, delay=0) {
   const bookBtn = card.querySelector('.hotel-book-btn');
   bookBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const bookingInfo = getHotelBookingInfo(hotel.id);
-    if (bookingInfo) {
-      window.location.href = 'reservations.html';
-      return;
-    }
     const curUser = JSON.parse(localStorage.getItem('aurum-user') || 'null');
     if (curUser) {
       openBookingModal(hotel);
@@ -525,17 +348,13 @@ function renderGallery() {
 }
 
 function renderMainPhoto(photo) {
-  if (photo.url) {
-    galImgInner.style.background = `url('${photo.url}') center/cover no-repeat`;
-    galImgInner.textContent = '';
-  } else {
-    galImgInner.style.background = photo.gradient || `linear-gradient(135deg,${galHotel.color},#0a0a06)`;
-    galImgInner.textContent = photo.initial || galHotel.initial;
-    galImgInner.style.color = 'rgba(201,169,110,0.18)';
-    galImgInner.style.fontSize = '72px';
-    galImgInner.style.fontFamily = "'Cormorant Garamond',serif";
-    galImgInner.style.letterSpacing = '6px';
-  }
+  galImgInner.style.background = photo.gradient;
+  galImgInner.style.backgroundSize = 'cover';
+  galImgInner.textContent = photo.initial || galHotel.initial;
+  galImgInner.style.color = 'rgba(201,169,110,0.18)';
+  galImgInner.style.fontSize = '72px';
+  galImgInner.style.fontFamily = "'Cormorant Garamond',serif";
+  galImgInner.style.letterSpacing = '6px';
   galImgLabel.textContent = photo.label;
   galImgInner.style.opacity = '0';
   requestAnimationFrame(() => { galImgInner.style.transition='opacity 0.3s'; galImgInner.style.opacity='1'; });
@@ -546,13 +365,10 @@ function renderThumbs(photos) {
   photos.forEach((p, i) => {
     const t = document.createElement('div');
     t.className = 'gallery-thumb' + (i === galIndex ? ' active' : '');
-    if (p.url) {
-      t.style.cssText = `background:url('${p.url}') center/cover no-repeat;`;
-    } else {
-      t.style.cssText = `background:${p.gradient};font-size:10px;color:rgba(201,169,110,0.4);letter-spacing:1px;text-transform:uppercase;`;
-      t.textContent = p.label.slice(0,2);
-    }
+    t.style.background = p.gradient;
     t.title = p.label;
+    t.textContent = p.label.slice(0,2);
+    t.style.cssText += `;background:${p.gradient};font-size:10px;color:rgba(201,169,110,0.4);letter-spacing:1px;text-transform:uppercase;`;
     t.addEventListener('click', () => { galIndex = i; renderGallery(); });
     galleryThumbs.appendChild(t);
   });
@@ -618,7 +434,8 @@ function openBookingModal(hotel) {
   document.getElementById('bookingCheckout').value = toISO(nextWeek);
 
   updateSummary(hotel.price);
-  _currentBookingHotel = hotel;
+  bookingModal.dataset.hotelId   = hotel.hotel_id || hotel.id || '';
+  bookingModal.dataset.hotelPrice = hotel.price || 0;
   const paySection = document.getElementById('paymentSection'); if (paySection) paySection.classList.add('hidden');
   bookingModal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -757,11 +574,7 @@ function closeBooking() { bookingModal.classList.remove('open'); document.body.s
   });
 });
 
-// Store current hotel for booking
-let _currentBookingHotel = null;
-const _origOpenBookingModal = openBookingModal;
-
-document.getElementById('confirmBooking').addEventListener('click', () => {
+document.getElementById('confirmBooking').addEventListener('click', async () => {
   const cin  = document.getElementById('bookingCheckin').value;
   const cout = document.getElementById('bookingCheckout').value;
   if (!cin || !cout) { showToast('Please select dates.','error'); return; }
@@ -771,191 +584,62 @@ document.getElementById('confirmBooking').addEventListener('click', () => {
     setTimeout(() => { document.getElementById('payName')?.focus(); }, 120);
     return;
   }
+  const token    = localStorage.getItem('aurum-token');
+  const hotelId  = bookingModal.dataset.hotelId;
+  const rooms    = parseInt(document.getElementById('bookingRooms').value) || 1;
+  const rate     = parseFloat((bookingModal.dataset.hotelPrice || document.getElementById('summaryRate').textContent).toString().replace(/[^0-9.]/g,''));
+  const nights   = Math.round((new Date(cout) - new Date(cin)) / 86400000);
+  const total    = Math.round(nights * rate * rooms);
+  if (token && hotelId) {
+    try {
+      const res = await fetch(`${API_BASE}bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ hotel_id: parseInt(hotelId), check_in: cin, check_out: cout, rooms, guests: rooms * 2, total_price: total })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeBooking();
+        showToast(`✔ Booking #${data.data.booking_id} confirmed!`, 'success');
+        return;
+      }
+    } catch(e) { console.warn('Booking API failed, showing confirmation anyway', e); }
+  }
   closeBooking();
-  showToast('✦ Reservation confirmed! Check your email for details.','success');
+  showToast('✦ Reservation confirmed! Check your email for details.', 'success');
 });
 
 const payConfirm = document.getElementById('payConfirmBtn');
 if (payConfirm) {
-  payConfirm.addEventListener('click', async () => {
-    const name   = document.getElementById('payName')?.value.trim() || '';
-    const number = document.getElementById('payNumber')?.value.replace(/\s+/g,'') || '';
-    const exp    = document.getElementById('payExp')?.value.trim() || '';
-    const cvc    = document.getElementById('payCvc')?.value.trim() || '';
+  payConfirm.addEventListener('click', () => {
+    const name = document.getElementById('payName').value.trim();
+    const number = document.getElementById('payNumber').value.replace(/\s+/g,'');
+    const exp = document.getElementById('payExp').value.trim();
+    const cvc = document.getElementById('payCvc').value.trim();
     if (!name || !number || !exp || !cvc) { showToast('Please complete payment details.','error'); return; }
-
-    const cin   = document.getElementById('bookingCheckin')?.value;
-    const cout  = document.getElementById('bookingCheckout')?.value;
-    const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
-    const curUser = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-
-    if (!cin || !cout || !_currentBookingHotel) {
-      showToast('Missing booking details. Please try again.','error'); return;
-    }
-
     payConfirm.disabled = true; payConfirm.textContent = 'Processing…';
-
-    try {
-      const checkIn  = new Date(cin);
-      const checkOut = new Date(cout);
-      const nights   = Math.round((checkOut - checkIn) / (1000*60*60*24));
-      const guests   = rooms * 2;
-      const last4    = number.slice(-4);
-
-      const res = await fetch(`${API_BASE}/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          hotelId:       _currentBookingHotel.id,
-          checkIn:       cin,
-          checkOut:      cout,
-          rooms:         rooms,
-          guests:        guests,
-          nights:        nights,
-          pricePerNight: _currentBookingHotel.price,
-          roomType:      'Deluxe Room',
-          paymentMethod: 'card',
-          paymentLast4:  last4,
-          guestName:     curUser?.name || name,
-          guestEmail:    curUser?.email || '',
-          notes:         ''
-        })
-      });
-      const data = await res.json();
+    setTimeout(() => {
       payConfirm.disabled = false; payConfirm.textContent = 'Pay & Confirm';
-
-      if (data.success) {
-        closeBooking();
-        const ref = data.data?.reference || ('AUR-' + String(data.data?.id || '').padStart(6,'0'));
-        showToast(`✔ Confirmed! Ref: ${ref} — View in My Reservations`, 'success');
-        // Save to cache immediately so hotel shows as booked
-        try {
-          const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
-          cached.unshift(data.data);
-          localStorage.setItem('aurum-bookings-cache', JSON.stringify(cached));
-          loadBookedHotels();
-          // Refresh hotel cards if results are visible
-          const loc = document.getElementById('s-location').value || 'Paris';
-          const rooms2 = parseInt(document.getElementById('s-rooms').value) || 1;
-          const children2 = parseInt(document.getElementById('s-children').value) || 0;
-          const price2 = document.getElementById('s-price').value || 'any';
-          renderResults(filterHotels(loc, rooms2, children2, price2), loc, rooms2, children2, price2);
-        } catch(_) {}
-        // Add link to reservations after toast
-        setTimeout(() => {
-          const t = document.createElement('div');
-          t.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9999;background:var(--gold,#c9a96e);color:#000;padding:10px 18px;font-size:11px;letter-spacing:1px;cursor:pointer;';
-          t.textContent = '→ VIEW MY RESERVATIONS';
-          t.onclick = () => { window.location.href = 'reservations.html'; };
-          document.body.appendChild(t);
-          setTimeout(() => t.remove(), 5000);
-        }, 500);
-      } else {
-        showToast(data.error || 'Booking failed. Please try again.', 'error');
-      }
-    } catch(err) {
-      payConfirm.disabled = false; payConfirm.textContent = 'Pay & Confirm';
-      showToast('Connection error. Please try again.', 'error');
-      console.error('[booking]', err);
-    }
+      closeBooking();
+      showToast('✔ Payment accepted — Reservation confirmed!','success');
+    }, 1200);
   });
 }
 
-/* ══════════ AI CONCIERGE (modified) ══════════ */
+/* ══════════ AI CONCIERGE (معدل) ══════════ */
 const aiModal    = document.getElementById('aiModal');
 const aiMessages = document.getElementById('aiMessages');
 const aiInput    = document.getElementById('aiInput');
-// Restore chat from localStorage
-window._aiHistory = [];
-try {
-  const _saved = localStorage.getItem('aurum-chat-history');
-  if (_saved) {
-    window._aiHistory = JSON.parse(_saved) || [];
-    window._aiHistory.forEach(function(turn) {
-      var div = document.createElement('div');
-      div.className = 'ai-msg ai-msg--' + (turn.role === 'user' ? 'user' : 'bot');
-      div.innerHTML = '<div class="ai-msg-avatar">' + (turn.role === 'user' ? '✦' : 'A') + '</div><div class="ai-msg-bubble">' + turn.content + '</div>';
-      aiMessages.appendChild(div);
-    });
-    if (window._aiHistory.length > 0) setTimeout(function(){ aiMessages.scrollTop = aiMessages.scrollHeight; }, 100);
-  }
-} catch(e) {}
 
-// Restore chat history from localStorage
-window._aiHistory = [];
-try {
-  const saved = localStorage.getItem('aurum-chat-history');
-  if (saved) {
-    window._aiHistory = JSON.parse(saved) || [];
-    // Restore messages in UI
-    window._aiHistory.forEach(turn => {
-      const div = document.createElement('div');
-      div.className = `ai-msg ai-msg--${turn.role === 'user' ? 'user' : 'bot'}`;
-      div.innerHTML = `
-        <div class="ai-msg-avatar">${turn.role === 'user' ? '👤' : 'A'}</div>
-        <div class="ai-msg-bubble">${turn.content}</div>`;
-      aiMessages.appendChild(div);
-    });
-    if (window._aiHistory.length > 0) aiMessages.scrollTop = aiMessages.scrollHeight;
-  }
-} catch(e) {}
-
-function openAiChatModal() {
+document.getElementById('openAiChat').addEventListener('click', () => {
   aiModal.classList.add('open');
-  // Do NOT lock body scroll — chat floats freely
-  var win = document.getElementById('aiWindow');
-  if (win) win.classList.remove('minimized');
-  setTimeout(function(){ aiInput.focus(); }, 100);
-}
-
-document.getElementById('openAiChat').addEventListener('click', openAiChatModal);
-document.getElementById('aiFab').addEventListener('click', openAiChatModal);
-document.getElementById('aiClose').addEventListener('click', function() {
-  aiModal.classList.remove('open');
+  document.body.style.overflow = 'hidden';
+  aiInput.focus();
 });
+document.getElementById('aiBackdrop').addEventListener('click', () => { aiModal.classList.remove('open'); document.body.style.overflow=''; });
+document.getElementById('aiClose').addEventListener('click', () => { aiModal.classList.remove('open'); document.body.style.overflow=''; });
 
 document.getElementById('aiSend').addEventListener('click', sendAI);
-
-// ══ MINIMIZE BUTTON ══
-var aiMinBtn = document.getElementById('aiMinimize');
-if (aiMinBtn) {
-  aiMinBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    var win = document.getElementById('aiWindow');
-    if (!win) return;
-    var isMin = win.classList.contains('minimized');
-    if (isMin) {
-      win.classList.remove('minimized');
-      aiMinBtn.textContent = '—';
-      aiMinBtn.title = 'Minimize';
-    } else {
-      win.classList.add('minimized');
-      aiMinBtn.textContent = '▲';
-      aiMinBtn.title = 'Restore chat';
-    }
-  });
-}
-
-// Click on minimized header to restore
-document.getElementById('aiDragHandle').addEventListener('click', function() {
-  var win = document.getElementById('aiWindow');
-  if (win && win.classList.contains('minimized')) {
-    win.classList.remove('minimized');
-    var btn = document.getElementById('aiMinimize');
-    if (btn) { btn.textContent = '—'; btn.title = 'Minimize'; }
-  }
-});
-
-// FAB also restores if minimized
-document.getElementById('aiFab').addEventListener('click', function() {
-  var win = document.getElementById('aiWindow');
-  if (win && win.classList.contains('minimized')) {
-    win.classList.remove('minimized');
-    var btn = document.getElementById('aiMinimize');
-    if (btn) { btn.textContent = '—'; }
-  }
-});
 aiInput.addEventListener('keydown', e => { if(e.key==='Enter') sendAI(); });
 
 function appendMsg(text, role) {
@@ -967,201 +651,6 @@ function appendMsg(text, role) {
   return div;
 }
 
-
-function quickAsk(btn) {
-  aiInput.value = btn.textContent.replace(/[🌹🌊]/g, '').trim();
-  document.getElementById('aiSuggestions').style.display = 'none';
-  sendAI();
-}
-
-// ══ ONE-TIME AMBIENT TONE (Web Audio API — no external files) ══
-(function() {
-  if (sessionStorage.getItem('aurum-played')) return;
-  sessionStorage.setItem('aurum-played', '1');
-
-  function playAmbient() {
-    try {
-      var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Create soft ambient pad: layered sine waves
-      var notes = [110, 165, 220, 277];
-      notes.forEach(function(freq, i) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 2);
-        gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 6);
-        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 12);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + i * 0.3);
-        osc.stop(ctx.currentTime + 12);
-      });
-    } catch(e) {}
-  }
-
-  document.addEventListener('click', function handler() {
-    playAmbient();
-    document.removeEventListener('click', handler);
-  }, { once: true });
-  document.addEventListener('scroll', function handler2() {
-    playAmbient();
-    document.removeEventListener('scroll', handler2);
-  }, { once: true });
-})();
-
-// ══ CLEAR CHAT ══
-var aiClearBtn = document.getElementById('aiClear');
-if (aiClearBtn) {
-  aiClearBtn.addEventListener('click', function() {
-    window._aiHistory = [];
-    try { localStorage.removeItem('aurum-chat-history'); } catch(e) {}
-    aiMessages.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Conversation cleared. How may I assist you?</div></div>';
-    document.getElementById('aiSuggestions').style.display = 'flex';
-  });
-}
-
-// ══ DRAG & RESIZE CHAT WINDOW ══
-(function() {
-  var win = document.getElementById('aiWindow');
-  if (!win) return;
-
-  // ── DRAG ──
-  var dragHandle = document.getElementById('aiDragHandle');
-  var dragging = false, dragStartX, dragStartY, winStartLeft, winStartTop;
-
-  function initPosition() {
-    if (win.style.left) return;
-    var rect = win.getBoundingClientRect();
-    win.style.left = rect.left + 'px';
-    win.style.top  = rect.top  + 'px';
-    win.style.right  = 'auto';
-    win.style.bottom = 'auto';
-    win.style.position = 'fixed';
-  }
-
-  dragHandle.addEventListener('mousedown', function(e) {
-    if (e.target.closest('button')) return;
-    if (win.classList.contains('maximized')) return;
-    initPosition();
-    dragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    winStartLeft = parseInt(win.style.left) || 0;
-    winStartTop  = parseInt(win.style.top)  || 0;
-    win.classList.add('dragging');
-    e.preventDefault();
-  });
-
-  // Touch drag
-  dragHandle.addEventListener('touchstart', function(e) {
-    if (e.target.closest('button')) return;
-    if (win.classList.contains('maximized')) return;
-    initPosition();
-    var t = e.touches[0];
-    dragging = true;
-    dragStartX = t.clientX; dragStartY = t.clientY;
-    winStartLeft = parseInt(win.style.left) || 0;
-    winStartTop  = parseInt(win.style.top)  || 0;
-    win.classList.add('dragging');
-  }, { passive: true });
-
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    var dx = e.clientX - dragStartX;
-    var dy = e.clientY - dragStartY;
-    var newLeft = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  winStartLeft + dx));
-    var newTop  = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, winStartTop  + dy));
-    win.style.left = newLeft + 'px';
-    win.style.top  = newTop  + 'px';
-  });
-
-  document.addEventListener('touchmove', function(e) {
-    if (!dragging) return;
-    var t = e.touches[0];
-    var dx = t.clientX - dragStartX;
-    var dy = t.clientY - dragStartY;
-    var newLeft = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  winStartLeft + dx));
-    var newTop  = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, winStartTop  + dy));
-    win.style.left = newLeft + 'px';
-    win.style.top  = newTop  + 'px';
-  }, { passive: true });
-
-  document.addEventListener('mouseup',  function() { dragging = false; win.classList.remove('dragging'); });
-  document.addEventListener('touchend', function() { dragging = false; win.classList.remove('dragging'); });
-
-  // ── RESIZE ──
-  function makeResizer(handle, mode) {
-    if (!handle) return;
-    var resizing = false, startX, startY, startW, startH, startLeft, startTop;
-
-    handle.addEventListener('mousedown', function(e) {
-      if (win.classList.contains('maximized')) return;
-      initPosition();
-      resizing = true;
-      startX = e.clientX; startY = e.clientY;
-      startW = win.offsetWidth; startH = win.offsetHeight;
-      startLeft = parseInt(win.style.left) || 0;
-      startTop  = parseInt(win.style.top)  || 0;
-      e.preventDefault(); e.stopPropagation();
-    });
-
-    document.addEventListener('mousemove', function(e) {
-      if (!resizing) return;
-      var dx = e.clientX - startX;
-      var dy = e.clientY - startY;
-      var minW = 300, minH = 320;
-
-      if (mode === 'bottom' || mode === 'corner') {
-        win.style.height = Math.max(minH, startH + dy) + 'px';
-      }
-      if (mode === 'right' || mode === 'corner') {
-        win.style.width = Math.max(minW, startW + dx) + 'px';
-      }
-      if (mode === 'left') {
-        var newW = Math.max(minW, startW - dx);
-        var newLeft = startLeft + (startW - newW);
-        win.style.width = newW + 'px';
-        win.style.left  = newLeft + 'px';
-      }
-    });
-
-    document.addEventListener('mouseup', function() { resizing = false; });
-  }
-
-  makeResizer(document.getElementById('aiResizeBottom'), 'bottom');
-  makeResizer(document.getElementById('aiResizeRight'),  'right');
-  makeResizer(document.getElementById('aiResizeLeft'),   'left');
-  makeResizer(document.getElementById('aiResizeCorner'), 'corner');
-
-  // ── MAXIMIZE ──
-  var maxBtn = document.getElementById('aiMaximize');
-  var isMax = false;
-  var savedPos = {};
-
-  if (maxBtn) {
-    maxBtn.addEventListener('click', function() {
-      isMax = !isMax;
-      if (isMax) {
-        savedPos = { left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height };
-        win.classList.add('maximized');
-        maxBtn.textContent = '⤡';
-        maxBtn.title = 'Restore';
-      } else {
-        win.classList.remove('maximized');
-        win.style.left   = savedPos.left   || '';
-        win.style.top    = savedPos.top    || '';
-        win.style.width  = savedPos.width  || '';
-        win.style.height = savedPos.height || '';
-        maxBtn.textContent = '⤢';
-        maxBtn.title = 'Maximize';
-      }
-    });
-  }
-})();
-
-// ══ QUICK SUGGEST HIDE ON FIRST MESSAGE ══
 async function sendAI() {
   const text = aiInput.value.trim();
   if (!text) return;
@@ -1169,37 +658,41 @@ async function sendAI() {
   aiInput.value = '';
   const typing = appendMsg('', 'bot');
   typing.classList.add('ai-typing');
-  if (!window._aiHistory) window._aiHistory = [];
 
   try {
-    const response = await fetch(`${API_BASE}/ai/concierge`, {
+    const response = await fetch(`${API_BASE}ai/concierge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ message: text, history: window._aiHistory || [] })
+      body: JSON.stringify({ message: text })
     });
     const data = await response.json();
     typing.classList.remove('ai-typing');
     if (data.success) {
-      const reply = data.data.response || data.data.reply || data.data.message || '';
-
-      // Fix mixed language issue: if user wrote Arabic, force-clean Japanese chars
-      let cleanedReply = reply;
-      // Remove any CJK characters that sneak into Arabic responses
-      if (/[؀-ۿ]/.test(text)) {
-        cleanedReply = reply.replace(/[　-鿿豈-﫿]/g, '').replace(/\s+/g,' ').trim();
-      }
-      typing.querySelector('.ai-msg-bubble').innerHTML = cleanedReply;
-      window._aiHistory.push({ role: 'user', content: text });
-      window._aiHistory.push({ role: 'assistant', content: cleanedReply });
-      if (window._aiHistory.length > 32) window._aiHistory = window._aiHistory.slice(-32);
-      try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
-      // Persist conversation
-      try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
-
-      // Handle navigation/booking actions
-      if (data.data.action) {
-        setTimeout(() => executeAiAction(data.data.action), 800);
+      typing.querySelector('.ai-msg-bubble').innerHTML = data.data.response;
+      if (data.data.suggestions && data.data.suggestions.length) {
+        const btnContainer = document.createElement('div');
+        btnContainer.style.marginTop = '12px';
+        btnContainer.style.display = 'flex';
+        btnContainer.style.gap = '8px';
+        btnContainer.style.flexWrap = 'wrap';
+        data.data.suggestions.slice(0, 3).forEach(hotel => {
+          const btn = document.createElement('button');
+          btn.className = 'btn-outline';
+          btn.style.fontSize = '9px';
+          btn.style.padding = '6px 12px';
+          btn.textContent = `🏨 ${hotel.name} ($${hotel.price})`;
+          btn.onclick = () => {
+            document.getElementById('s-location').value = hotel.city;
+            document.getElementById('s-rooms').value = 1;
+            document.getElementById('s-children').value = 0;
+            document.getElementById('s-price').value = 'any';
+            renderResults(filterHotels(hotel.city, 1, 0, 'any'), hotel.city, 1, 0, 'any');
+            aiModal.classList.remove('open');
+            showPage('results');
+          };
+          btnContainer.appendChild(btn);
+        });
+        typing.querySelector('.ai-msg-bubble').appendChild(btnContainer);
       }
     } else {
       typing.querySelector('.ai-msg-bubble').innerHTML = 'AI service unavailable. Please try again later.';
@@ -1210,71 +703,6 @@ async function sendAI() {
     console.error(err);
   }
   aiMessages.scrollTop = aiMessages.scrollHeight;
-}
-
-function executeAiAction(action) {
-  if (!action || !action.action) return;
-
-  switch (action.action) {
-
-    case 'SEARCH': {
-      const p = action.params || {};
-      const city     = p.city || '';
-      const rooms    = parseInt(p.rooms) || 1;
-      const children = parseInt(p.children) || 0;
-      const price    = p.price || 'any';
-      document.getElementById('s-location').value = city;
-      document.getElementById('s-rooms').value = rooms;
-      document.getElementById('s-children').value = children;
-      document.getElementById('s-price').value = price;
-      renderResults(filterHotels(city, rooms, children, price), city, rooms, children, price);
-      aiModal.classList.remove('open');
-      document.body.style.overflow = '';
-      showPage('results');
-      break;
-    }
-
-    case 'BOOK': {
-      const p = action.params || {};
-      // Find hotel by name (fuzzy match)
-      const target = (p.hotelName || '').toLowerCase();
-      const hotel = window._hotelsData
-        ? window._hotelsData.find(h => h.name.toLowerCase().includes(target) || target.includes(h.name.toLowerCase().split(' ').slice(-1)[0].toLowerCase()))
-        : null;
-
-      if (hotel) {
-        aiModal.classList.remove('open');
-        document.body.style.overflow = '';
-        setTimeout(() => {
-          openBookingModal(hotel);
-          // Pre-fill dates if provided
-          if (p.checkIn)  document.getElementById('bookingCheckin').value  = p.checkIn;
-          if (p.checkOut) document.getElementById('bookingCheckout').value = p.checkOut;
-          if (p.rooms)    document.getElementById('bookingRooms').value    = p.rooms;
-          if (p.guests)   document.getElementById('bookingGuests').value   = p.guests;
-          updateSummary && updateSummary(hotel.price);
-        }, 300);
-      } else {
-        // Hotel not found — fallback to search
-        const city = p.city || (p.hotelName || '').split(' ').pop();
-        renderResults(filterHotels(city, 1, 0, 'any'), city, 1, 0, 'any');
-        aiModal.classList.remove('open');
-        document.body.style.overflow = '';
-        showPage('results');
-      }
-      break;
-    }
-
-    case 'GO_RESERVATIONS':
-      aiModal.classList.remove('open');
-      window.location.href = 'reservations.html';
-      break;
-
-    case 'GO_HOME':
-      aiModal.classList.remove('open');
-      showPage('home');
-      break;
-  }
 }
 
 function parseUserFilters(text) {
