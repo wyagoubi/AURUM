@@ -1181,5 +1181,14 @@ window.addEventListener('DOMContentLoaded', () => {
       dashLink.textContent = 'Dashboard';
       loggedDiv.insertBefore(dashLink, loggedDiv.firstChild);
     }
+
+
+
+     document.querySelectorAll('#navUser a').forEach(link => {
+  link.addEventListener('click', function(e) {
+    e.stopPropagation(); // منع الكود الآخر من منع الرابط
+    // الرابط سيعمل بشكل طبيعي
+  });
+});
   }
 })();
