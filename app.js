@@ -2,6 +2,21 @@
    AURUM — app.js (integrated with backend API)
 ═══════════════════════════════════════════════ */
 
+// في أعلى الملف، بعد الـ requires مباشرة
+console.log('🚀 Server starting...');
+console.log('Current directory:', __dirname);
+console.log('PORT:', process.env.PORT);
+
+// صحح كود CORS
+app.use(cors({ origin: '*', credentials: true }));
+
+// في نهاية الملف، بدلاً من app.listen التقليدي، استخدم هذا:
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/healthz`);
+});
+
 // ================== API CONFIG ==================
 const API_BASE = 'https://YOUR-APP.onrender.com/api'; // ← ضع رابط Render هنا
 
