@@ -711,16 +711,59 @@ try {
 
 function openAiChatModal() {
   aiModal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-  aiInput.focus();
+  // Do NOT lock body scroll — chat floats freely
+  var win = document.getElementById('aiWindow');
+  if (win) win.classList.remove('minimized');
+  setTimeout(function(){ aiInput.focus(); }, 100);
 }
 
 document.getElementById('openAiChat').addEventListener('click', openAiChatModal);
 document.getElementById('aiFab').addEventListener('click', openAiChatModal);
-document.getElementById('aiBackdrop').addEventListener('click', () => { aiModal.classList.remove('open'); document.body.style.overflow=''; });
-document.getElementById('aiClose').addEventListener('click', () => { aiModal.classList.remove('open'); document.body.style.overflow=''; });
+document.getElementById('aiClose').addEventListener('click', function() {
+  aiModal.classList.remove('open');
+});
 
 document.getElementById('aiSend').addEventListener('click', sendAI);
+
+// ══ MINIMIZE BUTTON ══
+var aiMinBtn = document.getElementById('aiMinimize');
+if (aiMinBtn) {
+  aiMinBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var win = document.getElementById('aiWindow');
+    if (!win) return;
+    var isMin = win.classList.contains('minimized');
+    if (isMin) {
+      win.classList.remove('minimized');
+      aiMinBtn.textContent = '—';
+      aiMinBtn.title = 'Minimize';
+    } else {
+      win.classList.add('minimized');
+      aiMinBtn.textContent = '▲';
+      aiMinBtn.title = 'Restore chat';
+    }
+  });
+}
+
+// Click on minimized header to restore
+document.getElementById('aiDragHandle').addEventListener('click', function() {
+  var win = document.getElementById('aiWindow');
+  if (win && win.classList.contains('minimized')) {
+    win.classList.remove('minimized');
+    var btn = document.getElementById('aiMinimize');
+    if (btn) { btn.textContent = '—'; btn.title = 'Minimize'; }
+  }
+});
+
+// FAB also restores if minimized
+document.getElementById('aiFab').addEventListener('click', function() {
+  var win = document.getElementById('aiWindow');
+  if (win && win.classList.contains('minimized')) {
+    win.classList.remove('minimized');
+    var btn = document.getElementById('aiMinimize');
+    if (btn) { btn.textContent = '—'; }
+  }
+});
 aiInput.addEventListener('keydown', e => { if(e.key==='Enter') sendAI(); });
 
 function appendMsg(text, role) {
@@ -786,6 +829,145 @@ if (aiClearBtn) {
     document.getElementById('aiSuggestions').style.display = 'flex';
   });
 }
+
+// ══ DRAG & RESIZE CHAT WINDOW ══
+(function() {
+  var win = document.getElementById('aiWindow');
+  if (!win) return;
+
+  // ── DRAG ──
+  var dragHandle = document.getElementById('aiDragHandle');
+  var dragging = false, dragStartX, dragStartY, winStartLeft, winStartTop;
+
+  function initPosition() {
+    if (win.style.left) return;
+    var rect = win.getBoundingClientRect();
+    win.style.left = rect.left + 'px';
+    win.style.top  = rect.top  + 'px';
+    win.style.right  = 'auto';
+    win.style.bottom = 'auto';
+    win.style.position = 'fixed';
+  }
+
+  dragHandle.addEventListener('mousedown', function(e) {
+    if (e.target.closest('button')) return;
+    if (win.classList.contains('maximized')) return;
+    initPosition();
+    dragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    winStartLeft = parseInt(win.style.left) || 0;
+    winStartTop  = parseInt(win.style.top)  || 0;
+    win.classList.add('dragging');
+    e.preventDefault();
+  });
+
+  // Touch drag
+  dragHandle.addEventListener('touchstart', function(e) {
+    if (e.target.closest('button')) return;
+    if (win.classList.contains('maximized')) return;
+    initPosition();
+    var t = e.touches[0];
+    dragging = true;
+    dragStartX = t.clientX; dragStartY = t.clientY;
+    winStartLeft = parseInt(win.style.left) || 0;
+    winStartTop  = parseInt(win.style.top)  || 0;
+    win.classList.add('dragging');
+  }, { passive: true });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var dx = e.clientX - dragStartX;
+    var dy = e.clientY - dragStartY;
+    var newLeft = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  winStartLeft + dx));
+    var newTop  = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, winStartTop  + dy));
+    win.style.left = newLeft + 'px';
+    win.style.top  = newTop  + 'px';
+  });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    var t = e.touches[0];
+    var dx = t.clientX - dragStartX;
+    var dy = t.clientY - dragStartY;
+    var newLeft = Math.max(0, Math.min(window.innerWidth  - win.offsetWidth,  winStartLeft + dx));
+    var newTop  = Math.max(0, Math.min(window.innerHeight - win.offsetHeight, winStartTop  + dy));
+    win.style.left = newLeft + 'px';
+    win.style.top  = newTop  + 'px';
+  }, { passive: true });
+
+  document.addEventListener('mouseup',  function() { dragging = false; win.classList.remove('dragging'); });
+  document.addEventListener('touchend', function() { dragging = false; win.classList.remove('dragging'); });
+
+  // ── RESIZE ──
+  function makeResizer(handle, mode) {
+    if (!handle) return;
+    var resizing = false, startX, startY, startW, startH, startLeft, startTop;
+
+    handle.addEventListener('mousedown', function(e) {
+      if (win.classList.contains('maximized')) return;
+      initPosition();
+      resizing = true;
+      startX = e.clientX; startY = e.clientY;
+      startW = win.offsetWidth; startH = win.offsetHeight;
+      startLeft = parseInt(win.style.left) || 0;
+      startTop  = parseInt(win.style.top)  || 0;
+      e.preventDefault(); e.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!resizing) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      var minW = 300, minH = 320;
+
+      if (mode === 'bottom' || mode === 'corner') {
+        win.style.height = Math.max(minH, startH + dy) + 'px';
+      }
+      if (mode === 'right' || mode === 'corner') {
+        win.style.width = Math.max(minW, startW + dx) + 'px';
+      }
+      if (mode === 'left') {
+        var newW = Math.max(minW, startW - dx);
+        var newLeft = startLeft + (startW - newW);
+        win.style.width = newW + 'px';
+        win.style.left  = newLeft + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', function() { resizing = false; });
+  }
+
+  makeResizer(document.getElementById('aiResizeBottom'), 'bottom');
+  makeResizer(document.getElementById('aiResizeRight'),  'right');
+  makeResizer(document.getElementById('aiResizeLeft'),   'left');
+  makeResizer(document.getElementById('aiResizeCorner'), 'corner');
+
+  // ── MAXIMIZE ──
+  var maxBtn = document.getElementById('aiMaximize');
+  var isMax = false;
+  var savedPos = {};
+
+  if (maxBtn) {
+    maxBtn.addEventListener('click', function() {
+      isMax = !isMax;
+      if (isMax) {
+        savedPos = { left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height };
+        win.classList.add('maximized');
+        maxBtn.textContent = '⤡';
+        maxBtn.title = 'Restore';
+      } else {
+        win.classList.remove('maximized');
+        win.style.left   = savedPos.left   || '';
+        win.style.top    = savedPos.top    || '';
+        win.style.width  = savedPos.width  || '';
+        win.style.height = savedPos.height || '';
+        maxBtn.textContent = '⤢';
+        maxBtn.title = 'Maximize';
+      }
+    });
+  }
+})();
 
 // ══ QUICK SUGGEST HIDE ON FIRST MESSAGE ══
 async function sendAI() {
@@ -893,13 +1075,11 @@ function executeAiAction(action) {
 
     case 'GO_RESERVATIONS':
       aiModal.classList.remove('open');
-      document.body.style.overflow = '';
       window.location.href = 'reservations.html';
       break;
 
     case 'GO_HOME':
       aiModal.classList.remove('open');
-      document.body.style.overflow = '';
       showPage('home');
       break;
   }
