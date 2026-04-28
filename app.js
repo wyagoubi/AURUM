@@ -739,30 +739,41 @@ function quickAsk(btn) {
   sendAI();
 }
 
-// ══ ONE-TIME AMBIENT SOUND (plays once per visit, not on refresh) ══
+// ══ ONE-TIME AMBIENT TONE (Web Audio API — no external files) ══
 (function() {
-  var amb = document.getElementById('ambientAudio');
-  if (!amb) return;
-  // sessionStorage resets when tab is closed — so sound plays once per browser session
-  if (!sessionStorage.getItem('aurum-played')) {
-    sessionStorage.setItem('aurum-played', '1');
-    amb.volume = 0.18;
-    // Autoplay needs user gesture on some browsers — try on first click/scroll
-    var played = false;
-    function tryPlay() {
-      if (played) return;
-      played = true;
-      amb.play().catch(function(){});
-      document.removeEventListener('click', tryPlay);
-      document.removeEventListener('scroll', tryPlay);
-      document.removeEventListener('keydown', tryPlay);
-    }
-    document.addEventListener('click', tryPlay, { once: true });
-    document.addEventListener('scroll', tryPlay, { once: true });
-    document.addEventListener('keydown', tryPlay, { once: true });
-    // Also try immediately (works on some browsers)
-    amb.play().catch(function(){});
+  if (sessionStorage.getItem('aurum-played')) return;
+  sessionStorage.setItem('aurum-played', '1');
+
+  function playAmbient() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Create soft ambient pad: layered sine waves
+      var notes = [110, 165, 220, 277];
+      notes.forEach(function(freq, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 2);
+        gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 6);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.3);
+        osc.stop(ctx.currentTime + 12);
+      });
+    } catch(e) {}
   }
+
+  document.addEventListener('click', function handler() {
+    playAmbient();
+    document.removeEventListener('click', handler);
+  }, { once: true });
+  document.addEventListener('scroll', function handler2() {
+    playAmbient();
+    document.removeEventListener('scroll', handler2);
+  }, { once: true });
 })();
 
 // ══ CLEAR CHAT ══
