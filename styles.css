@@ -2271,3 +2271,44 @@ nav.scrolled {
   cursor: pointer; border-radius: 4px; transition: all 0.3s;
 }
 .welcome-enter-btn:hover { background: var(--gold); color: #0a0800; }
+
+/* ══════════════════════════════════════════
+   BOOKED HOTEL BADGE
+══════════════════════════════════════════ */
+.hotel-booked-badge {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 5px 10px;
+  backdrop-filter: blur(6px);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  pointer-events: none;
+}
+.hotel-booked-badge.imminent {
+  background: rgba(201,169,110,0.2);
+  border-color: #ffd700;
+  color: #ffd700;
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+.hotel-booked-badge.current {
+  background: rgba(40,180,100,0.15);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.hotel-book-btn.booked-btn {
+  background: transparent !important;
+  border: 1px solid var(--gold) !important;
+  color: var(--gold) !important;
+  letter-spacing: 2px;
+}
+.hotel-book-btn.booked-btn:hover {
+  background: rgba(201,169,110,0.1) !important;
+}
