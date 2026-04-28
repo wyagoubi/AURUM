@@ -95,6 +95,7 @@ async function loadHotelsFromAPI() {
         const data = await res.json();
         if (data.success) {
             hotelDatabase = data.data;
+            window._hotelsData = data.data; // make available to AI action handler
             renderResults(filterHotels('Paris', 1, 0, 'any'), 'Paris', 1, 0, 'any');
         } else {
             console.warn('API hotels failed, using local fallback');
@@ -720,31 +721,11 @@ async function sendAI() {
       typing.querySelector('.ai-msg-bubble').innerHTML = reply;
       window._aiHistory.push({ role: 'user', content: text });
       window._aiHistory.push({ role: 'assistant', content: reply });
-      if (window._aiHistory.length > 20) window._aiHistory = window._aiHistory.slice(-20);
-      if (data.data.suggestions && data.data.suggestions.length > 0) {
-        const btnContainer = document.createElement('div');
-        btnContainer.style.marginTop = '12px';
-        btnContainer.style.display = 'flex';
-        btnContainer.style.gap = '8px';
-        btnContainer.style.flexWrap = 'wrap';
-        data.data.suggestions.slice(0, 3).forEach(hotel => {
-          const btn = document.createElement('button');
-          btn.className = 'btn-outline';
-          btn.style.fontSize = '9px';
-          btn.style.padding = '6px 12px';
-          btn.textContent = `🏨 ${hotel.name} ($${hotel.price})`;
-          btn.onclick = () => {
-            document.getElementById('s-location').value = hotel.city;
-            document.getElementById('s-rooms').value = 1;
-            document.getElementById('s-children').value = 0;
-            document.getElementById('s-price').value = 'any';
-            renderResults(filterHotels(hotel.city, 1, 0, 'any'), hotel.city, 1, 0, 'any');
-            aiModal.classList.remove('open');
-            showPage('results');
-          };
-          btnContainer.appendChild(btn);
-        });
-        typing.querySelector('.ai-msg-bubble').appendChild(btnContainer);
+      if (window._aiHistory.length > 32) window._aiHistory = window._aiHistory.slice(-32);
+
+      // Handle navigation/booking actions
+      if (data.data.action) {
+        setTimeout(() => executeAiAction(data.data.action), 800);
       }
     } else {
       typing.querySelector('.ai-msg-bubble').innerHTML = 'AI service unavailable. Please try again later.';
@@ -755,6 +736,73 @@ async function sendAI() {
     console.error(err);
   }
   aiMessages.scrollTop = aiMessages.scrollHeight;
+}
+
+function executeAiAction(action) {
+  if (!action || !action.action) return;
+
+  switch (action.action) {
+
+    case 'SEARCH': {
+      const p = action.params || {};
+      const city     = p.city || '';
+      const rooms    = parseInt(p.rooms) || 1;
+      const children = parseInt(p.children) || 0;
+      const price    = p.price || 'any';
+      document.getElementById('s-location').value = city;
+      document.getElementById('s-rooms').value = rooms;
+      document.getElementById('s-children').value = children;
+      document.getElementById('s-price').value = price;
+      renderResults(filterHotels(city, rooms, children, price), city, rooms, children, price);
+      aiModal.classList.remove('open');
+      document.body.style.overflow = '';
+      showPage('results');
+      break;
+    }
+
+    case 'BOOK': {
+      const p = action.params || {};
+      // Find hotel by name (fuzzy match)
+      const target = (p.hotelName || '').toLowerCase();
+      const hotel = window._hotelsData
+        ? window._hotelsData.find(h => h.name.toLowerCase().includes(target) || target.includes(h.name.toLowerCase().split(' ').slice(-1)[0].toLowerCase()))
+        : null;
+
+      if (hotel) {
+        aiModal.classList.remove('open');
+        document.body.style.overflow = '';
+        setTimeout(() => {
+          openBookingModal(hotel);
+          // Pre-fill dates if provided
+          if (p.checkIn)  document.getElementById('bookingCheckin').value  = p.checkIn;
+          if (p.checkOut) document.getElementById('bookingCheckout').value = p.checkOut;
+          if (p.rooms)    document.getElementById('bookingRooms').value    = p.rooms;
+          if (p.guests)   document.getElementById('bookingGuests').value   = p.guests;
+          updateSummary && updateSummary(hotel.price);
+        }, 300);
+      } else {
+        // Hotel not found — fallback to search
+        const city = p.city || (p.hotelName || '').split(' ').pop();
+        renderResults(filterHotels(city, 1, 0, 'any'), city, 1, 0, 'any');
+        aiModal.classList.remove('open');
+        document.body.style.overflow = '';
+        showPage('results');
+      }
+      break;
+    }
+
+    case 'GO_RESERVATIONS':
+      aiModal.classList.remove('open');
+      document.body.style.overflow = '';
+      window.location.href = 'reservations.html';
+      break;
+
+    case 'GO_HOME':
+      aiModal.classList.remove('open');
+      document.body.style.overflow = '';
+      showPage('home');
+      break;
+  }
 }
 
 function parseUserFilters(text) {
