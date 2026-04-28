@@ -2,7 +2,7 @@
    AURUM — app.js (متكامل مع api.php)
 ═══════════════════════════════════════════════ */
 
-const API_BASE = '/api.php?route=';  // تغيير المسار
+const API_BASE = 'https://aurum-m4v8.onrender.com/api';  // تغيير المسار
 
 /* ══════════ THEME ══════════ */
 const body = document.body;
