@@ -412,5 +412,287 @@
 </div>
 
 <script src="auth.js"></script>
+  <script>
+// تصحيح فوري للأزرار - يعمل 100%
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔧 Auth fix loaded');
+  
+  // منع أي form من إعادة التحميل
+  document.querySelectorAll('form, button[type="submit"], button').forEach(el => {
+    if (el.tagName === 'BUTTON') {
+      if (el.getAttribute('type') !== 'submit') {
+        el.setAttribute('type', 'button');
+      }
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
+  });
+  
+  // ========== إصلاح زر تسجيل الدخول الرئيسي ==========
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) {
+    // إزالة جميع المستمعات القديمة
+    const newLoginBtn = loginBtn.cloneNode(true);
+    loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+    
+    newLoginBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('✅ Guest login button WORKING');
+      
+      const email = document.getElementById('loginEmail')?.value.trim();
+      const pass = document.getElementById('loginPass')?.value;
+      const emailErr = document.getElementById('loginEmailErr');
+      const passErr = document.getElementById('loginPassErr');
+      
+      // مسح الأخطاء السابقة
+      if (emailErr) emailErr.textContent = '';
+      if (passErr) passErr.textContent = '';
+      
+      // التحقق من الحقول
+      if (!email) {
+        if (emailErr) emailErr.textContent = 'Please enter your email';
+        return;
+      }
+      if (!pass) {
+        if (passErr) passErr.textContent = 'Please enter your password';
+        return;
+      }
+      
+      // محاولة تسجيل الدخول
+      const users = JSON.parse(localStorage.getItem('aurum-users') || '[]');
+      const hashedPass = function(p) {
+        let h = 0;
+        for (let i = 0; i < p.length; i++) {
+          h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+        }
+        return h.toString(36);
+      };
+      
+      const foundUser = users.find(u => u.email === email && u.role === 'guest');
+      
+      if (!foundUser) {
+        if (emailErr) emailErr.textContent = 'No account found. Please register first.';
+        return;
+      }
+      
+      if (foundUser.password !== hashedPass(pass)) {
+        if (passErr) passErr.textContent = 'Incorrect password.';
+        return;
+      }
+      
+      // تسجيل الدخول ناجح
+      localStorage.setItem('aurum-user', JSON.stringify({
+        id: foundUser.id,
+        name: foundUser.name,
+        email: foundUser.email,
+        role: 'guest',
+        initials: foundUser.initials
+      }));
+      
+      alert('✅ Login successful! Redirecting...');
+      window.location.href = 'index.html';
+    });
+  }
+  
+  // ========== إصلاح زر تسجيل الدخول كمالك ==========
+  const ownerLoginBtn = document.getElementById('ownerLoginBtn');
+  if (ownerLoginBtn) {
+    const newOwnerBtn = ownerLoginBtn.cloneNode(true);
+    ownerLoginBtn.parentNode.replaceChild(newOwnerBtn, ownerLoginBtn);
+    
+    newOwnerBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('✅ Owner login button WORKING');
+      
+      const email = document.getElementById('ownerLoginEmail')?.value.trim();
+      const pass = document.getElementById('ownerLoginPass')?.value;
+      const emailErr = document.getElementById('ownerLoginEmailErr');
+      const passErr = document.getElementById('ownerLoginPassErr');
+      
+      if (emailErr) emailErr.textContent = '';
+      if (passErr) passErr.textContent = '';
+      
+      if (!email) {
+        if (emailErr) emailErr.textContent = 'Please enter your email';
+        return;
+      }
+      if (!pass) {
+        if (passErr) passErr.textContent = 'Please enter your password';
+        return;
+      }
+      
+      const users = JSON.parse(localStorage.getItem('aurum-users') || '[]');
+      const hashedPass = function(p) {
+        let h = 0;
+        for (let i = 0; i < p.length; i++) {
+          h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+        }
+        return h.toString(36);
+      };
+      
+      const foundUser = users.find(u => u.email === email && u.role === 'owner');
+      
+      if (!foundUser) {
+        if (emailErr) emailErr.textContent = 'No owner account found. Please register first.';
+        return;
+      }
+      
+      if (foundUser.password !== hashedPass(pass)) {
+        if (passErr) passErr.textContent = 'Incorrect password.';
+        return;
+      }
+      
+      localStorage.setItem('aurum-user', JSON.stringify({
+        id: foundUser.id,
+        name: foundUser.name,
+        email: foundUser.email,
+        role: 'owner',
+        hotelName: foundUser.hotelName,
+        initials: foundUser.initials
+      }));
+      
+      alert('✅ Owner login successful!');
+      window.location.href = 'owner-dashboard.html';
+    });
+  }
+  
+  // ========== إصلاح زر التسجيل ==========
+  const registerBtn = document.getElementById('registerBtn');
+  if (registerBtn) {
+    const newRegBtn = registerBtn.cloneNode(true);
+    registerBtn.parentNode.replaceChild(newRegBtn, registerBtn);
+    
+    newRegBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('✅ Register button WORKING');
+      
+      const firstName = document.getElementById('regFirst')?.value.trim();
+      const lastName = document.getElementById('regLast')?.value.trim();
+      const email = document.getElementById('regEmail')?.value.trim();
+      const pass = document.getElementById('regPass')?.value;
+      const pass2 = document.getElementById('regPass2')?.value;
+      const agreed = document.getElementById('agreeTerms')?.checked;
+      
+      // مسح الأخطاء
+      document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      
+      if (!firstName) { document.getElementById('regFirstErr').textContent = 'First name required'; return; }
+      if (!lastName) { document.getElementById('regLastErr').textContent = 'Last name required'; return; }
+      if (!email) { document.getElementById('regEmailErr').textContent = 'Email required'; return; }
+      if (!pass || pass.length < 6) { document.getElementById('regPassErr').textContent = 'Password must be at least 6 characters'; return; }
+      if (pass !== pass2) { document.getElementById('regPass2Err').textContent = 'Passwords do not match'; return; }
+      if (!agreed) { document.getElementById('agreeErr').textContent = 'Please accept Terms'; return; }
+      
+      const users = JSON.parse(localStorage.getItem('aurum-users') || '[]');
+      if (users.find(u => u.email === email)) {
+        document.getElementById('regEmailErr').textContent = 'Email already exists';
+        return;
+      }
+      
+      const hashedPass = function(p) {
+        let h = 0;
+        for (let i = 0; i < p.length; i++) {
+          h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+        }
+        return h.toString(36);
+      };
+      
+      users.push({
+        id: Date.now(),
+        firstName: firstName,
+        lastName: lastName,
+        name: firstName + ' ' + lastName,
+        email: email,
+        password: hashedPass(pass),
+        role: 'guest',
+        initials: (firstName[0] + lastName[0]).toUpperCase()
+      });
+      localStorage.setItem('aurum-users', JSON.stringify(users));
+      
+      localStorage.setItem('aurum-user', JSON.stringify({
+        name: firstName + ' ' + lastName,
+        email: email,
+        role: 'guest',
+        initials: (firstName[0] + lastName[0]).toUpperCase()
+      }));
+      
+      alert('✅ Registration successful! Redirecting...');
+      window.location.href = 'index.html';
+    });
+  }
+  
+  // ========== تسجيل المالك ==========
+  const ownerRegisterBtn = document.getElementById('ownerRegisterBtn');
+  if (ownerRegisterBtn) {
+    const newOwnerRegBtn = ownerRegisterBtn.cloneNode(true);
+    ownerRegisterBtn.parentNode.replaceChild(newOwnerRegBtn, ownerRegisterBtn);
+    
+    newOwnerRegBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('✅ Owner register button WORKING');
+      
+      const firstName = document.getElementById('ownerFirst')?.value.trim();
+      const lastName = document.getElementById('ownerLast')?.value.trim();
+      const hotel = document.getElementById('ownerHotel')?.value.trim();
+      const email = document.getElementById('ownerEmail')?.value.trim();
+      const pass = document.getElementById('ownerPass')?.value;
+      const agreed = document.getElementById('ownerAgreeTerms')?.checked;
+      
+      document.querySelectorAll('#ownerSection .field-error').forEach(el => el.textContent = '');
+      
+      if (!firstName) { document.getElementById('ownerFirstErr').textContent = 'First name required'; return; }
+      if (!lastName) { document.getElementById('ownerLastErr').textContent = 'Last name required'; return; }
+      if (!hotel) { document.getElementById('ownerHotelErr').textContent = 'Hotel name required'; return; }
+      if (!email) { document.getElementById('ownerEmailErr').textContent = 'Email required'; return; }
+      if (!pass || pass.length < 6) { document.getElementById('ownerPassErr').textContent = 'Password must be at least 6 characters'; return; }
+      if (!agreed) { document.getElementById('ownerAgreeErr').textContent = 'Please accept Terms'; return; }
+      
+      const users = JSON.parse(localStorage.getItem('aurum-users') || '[]');
+      if (users.find(u => u.email === email)) {
+        document.getElementById('ownerEmailErr').textContent = 'Email already exists';
+        return;
+      }
+      
+      const hashedPass = function(p) {
+        let h = 0;
+        for (let i = 0; i < p.length; i++) {
+          h = (Math.imul(31, h) + p.charCodeAt(i)) | 0;
+        }
+        return h.toString(36);
+      };
+      
+      users.push({
+        id: Date.now(),
+        firstName: firstName,
+        lastName: lastName,
+        name: firstName + ' ' + lastName,
+        email: email,
+        password: hashedPass(pass),
+        role: 'owner',
+        hotelName: hotel,
+        initials: (firstName[0] + lastName[0]).toUpperCase()
+      });
+      localStorage.setItem('aurum-users', JSON.stringify(users));
+      
+      localStorage.setItem('aurum-user', JSON.stringify({
+        name: firstName + ' ' + lastName,
+        email: email,
+        role: 'owner',
+        hotelName: hotel,
+        initials: (firstName[0] + lastName[0]).toUpperCase()
+      }));
+      
+      alert('✅ Hotel registration successful!');
+      window.location.href = 'owner-dashboard.html';
+    });
+  }
+});
+</script>
 </body>
 </html>
