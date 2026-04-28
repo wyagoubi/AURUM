@@ -388,9 +388,10 @@ body.light-mode .hero-orb-2 { background:radial-gradient(circle,rgba(160,120,64,
 /* ═══════════ AI MODAL ═══════════ */
 .ai-modal {
   position:fixed; inset:0; z-index:2000;
-  display:none; align-items:center; justify-content:center; padding:20px;
+  pointer-events: none; /* lets scroll pass through */
+  display:none;
 }
-.ai-modal.open { display:flex; }
+.ai-modal.open { display:block; }
 .ai-modal-backdrop {
   position:absolute; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
 }
@@ -1941,8 +1942,11 @@ nav.scrolled {
   bottom: 100px;
   right: 32px;
   width: 380px;
-  max-width: calc(100vw - 24px);
-  max-height: 580px;
+  min-width: 300px;
+  max-width: 90vw;
+  height: 520px;
+  min-height: 320px;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   background: var(--bg2, #0a0d11);
@@ -1955,6 +1959,18 @@ nav.scrolled {
   pointer-events: none;
   transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
   z-index: 2000;
+  user-select: none;
+  pointer-events: all;
+}
+.ai-modal-window.is-open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+.ai-modal-window.dragging {
+  transition: opacity 0.25s ease;
+  cursor: grabbing !important;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,169,110,0.3);
 }
 .ai-modal.open .ai-modal-window {
   transform: translateY(0) scale(1);
@@ -1962,6 +1978,97 @@ nav.scrolled {
   pointer-events: all;
 }
 .ai-modal-backdrop { display: none; }
+
+/* ══ CHAT MINIMIZED STATE ══ */
+.ai-modal-window.minimized {
+  height: 58px !important;
+  min-height: 58px !important;
+  overflow: hidden;
+  border-radius: 16px;
+  resize: none;
+}
+.ai-modal-window.minimized .ai-messages,
+.ai-modal-window.minimized .ai-suggestions-row,
+.ai-modal-window.minimized .ai-input-row,
+.ai-modal-window.minimized .ai-resize-handle,
+.ai-modal-window.minimized .ai-resize-handle-left,
+.ai-modal-window.minimized .ai-resize-handle-right,
+.ai-modal-window.minimized .ai-resize-handle-corner {
+  display: none !important;
+}
+.ai-modal-window.minimized .ai-modal-header {
+  border-bottom: none;
+  cursor: pointer;
+}
+.ai-minimize-btn {
+  background: none;
+  border: 1px solid rgba(201,169,110,0.2);
+  color: var(--gold);
+  width: 28px; height: 28px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 16px; font-weight: 300;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.ai-minimize-btn:hover { background: rgba(201,169,110,0.1); }
+
+/* Drag handle area */
+.ai-modal-header { cursor: grab; }
+.ai-modal-header:active { cursor: grabbing; }
+
+/* Resize handle */
+.ai-resize-handle {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 6px;
+  cursor: ns-resize;
+  background: transparent;
+}
+.ai-resize-handle-left {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; width: 6px;
+  cursor: ew-resize;
+}
+.ai-resize-handle-right {
+  position: absolute;
+  top: 0; bottom: 0; right: 0; width: 6px;
+  cursor: ew-resize;
+}
+.ai-resize-handle-corner {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 16px; height: 16px;
+  cursor: nwse-resize;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  padding: 3px;
+}
+.ai-resize-handle-corner::after {
+  content: '';
+  display: block;
+  width: 8px; height: 8px;
+  border-right: 2px solid rgba(201,169,110,0.4);
+  border-bottom: 2px solid rgba(201,169,110,0.4);
+  border-radius: 0 0 3px 0;
+}
+
+/* Maximize button */
+.ai-maximize-btn {
+  background: none;
+  border: 1px solid rgba(201,169,110,0.2);
+  color: var(--gold);
+  width: 28px; height: 28px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 12px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.ai-maximize-btn:hover { background: rgba(201,169,110,0.1); }
+.ai-modal-window.maximized {
+  top: 16px !important; left: 16px !important;
+  right: 16px !important; bottom: 16px !important;
+  width: calc(100vw - 32px) !important;
+  height: calc(100vh - 32px) !important;
+  border-radius: 16px;
+}
 
 .ai-modal-header {
   display: flex;
