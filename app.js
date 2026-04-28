@@ -87,17 +87,135 @@ navLinks.forEach(link => {
   });
 });
 
+/* ══════════ HOTEL COVER IMAGES ══════════ */
+const HOTEL_COVERS = {
+  'Le Grand Aurum Paris':    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600&q=80',
+  'Aurum Palace London':     'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80',
+  'Aurum Medina Marrakesh':  'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80',
+  'Aurum Sakura Tokyo':      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80',
+  'Aurum Overwater Maldives':'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=600&q=80',
+  'Aurum Summit Aspen':      'https://images.unsplash.com/photo-1548013146-72479768bada?w=600&q=80',
+  'Aurum Duomo Florence':    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80',
+  'Aurum Sentosa Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&q=80',
+  'Aurum Desert Dubai':      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80',
+  'Aurum Bosphorus Istanbul':'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=600&q=80',
+  'Aurum Riviera Santorini': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80',
+  'Aurum Zen Bali':          'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80',
+};
+
+const HOTEL_GALLERY = {
+  'Le Grand Aurum Paris': [
+    {url:'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80', label:'Exterior'},
+    {url:'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80', label:'Lobby'},
+    {url:'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80', label:'Suite'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Restaurant'},
+  ],
+  'Aurum Palace London': [
+    {url:'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80', label:'Exterior'},
+    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
+    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Fine Dining'},
+  ],
+  'Aurum Medina Marrakesh': [
+    {url:'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=800&q=80', label:'Riad Courtyard'},
+    {url:'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80', label:'Rooftop Pool'},
+    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Suite'},
+    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Hammam'},
+  ],
+  'Aurum Sakura Tokyo': [
+    {url:'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80', label:'Skyline View'},
+    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
+    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Onsen'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Michelin Dining'},
+  ],
+  'Aurum Overwater Maldives': [
+    {url:'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=800&q=80', label:'Overwater Villa'},
+    {url:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80', label:'Lagoon'},
+    {url:'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=800&q=80', label:'Private Pool'},
+    {url:'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80', label:'Underwater Spa'},
+  ],
+  'Aurum Summit Aspen': [
+    {url:'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80', label:'Mountain View'},
+    {url:'https://images.unsplash.com/photo-1551524559-8af4e6624178?w=800&q=80', label:'Ski Slopes'},
+    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Wine Cellar'},
+  ],
+  'Aurum Duomo Florence': [
+    {url:'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80', label:'Florence View'},
+    {url:'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80', label:'Palazzo Lobby'},
+    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Suite'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Rooftop Dining'},
+  ],
+  'Aurum Sentosa Singapore': [
+    {url:'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&q=80', label:'Infinity Pool'},
+    {url:'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&q=80', label:'Skyline'},
+    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Suite'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Private Beach'},
+  ],
+};
+
+/* ══════════ ACTIVE BOOKINGS SYNC ══════════ */
+let bookedHotelIds = new Set();
+
+function loadBookedHotels() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
+    const today = new Date(); today.setUTCHours(0,0,0,0);
+    bookedHotelIds = new Set(
+      cached
+        .filter(b => {
+          if (b.status === 'cancelled') return false;
+          const cout = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
+          return cout >= today;
+        })
+        .map(b => Number(b.hotel_id || b.hotelId))
+    );
+  } catch(_) { bookedHotelIds = new Set(); }
+}
+
+async function syncBookingsFromAPI() {
+  const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+  if (!user) return;
+  try {
+    const res = await fetch(`${API_BASE}/bookings/me`, { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('aurum-bookings-cache', JSON.stringify(data.data));
+      loadBookedHotels();
+      // Re-render results if visible
+      const resultsPage = document.getElementById('page-results');
+      if (resultsPage && resultsPage.classList.contains('active')) {
+        const loc = document.getElementById('s-location').value || 'Paris';
+        const rooms = parseInt(document.getElementById('s-rooms').value) || 1;
+        const children = parseInt(document.getElementById('s-children').value) || 0;
+        const price = document.getElementById('s-price').value || 'any';
+        renderResults(filterHotels(loc, rooms, children, price), loc, rooms, children, price);
+      }
+    }
+  } catch(_) {}
+}
+
 /* ══════════ HOTEL DATABASE (loaded from API) ══════════ */
 let hotelDatabase = [];
 
 async function loadHotelsFromAPI() {
     try {
+        loadBookedHotels(); // load cached bookings first
         const res = await fetch(`${API_BASE}/hotels`);
         const data = await res.json();
         if (data.success) {
-            hotelDatabase = data.data;
-            window._hotelsData = data.data; // make available to AI action handler
+            // Enrich with cover images
+            hotelDatabase = data.data.map(h => ({
+              ...h,
+              cover: HOTEL_COVERS[h.name] || null,
+              photos: HOTEL_GALLERY[h.name]
+                ? buildGalleryPhotos(h, HOTEL_GALLERY[h.name])
+                : makePhotos(h.initial || 'AU', h.color || '#1a1208', '#2a1f0a', '#0e0c06'),
+            }));
+            window._hotelsData = hotelDatabase;
             renderResults(filterHotels('Paris', 1, 0, 'any'), 'Paris', 1, 0, 'any');
+            syncBookingsFromAPI(); // sync in background
         } else {
             console.warn('API hotels failed, using local fallback');
             useLocalHotelDatabase();
@@ -106,6 +224,23 @@ async function loadHotelsFromAPI() {
         console.error('Error loading hotels from API', e);
         useLocalHotelDatabase();
     }
+}
+
+function buildGalleryPhotos(hotel, galleryImages) {
+  const c1 = hotel.color || '#1a1208';
+  const rooms = [
+    {url:'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80', label:'Deluxe Room'},
+    {url:'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80', label:'Junior Suite'},
+    {url:'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80', label:'Grand Suite'},
+    {url:'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80', label:'Presidential Suite'},
+  ];
+  const amenities = [
+    {url:'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80', label:'Spa & Wellness'},
+    {url:'https://images.unsplash.com/photo-1540202404-a2f29016b523?w=800&q=80', label:'Swimming Pool'},
+    {url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80', label:'Fine Dining'},
+    {url:'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=800&q=80', label:'Bar & Lounge'},
+  ];
+  return { hotel: galleryImages, rooms, amenities };
 }
 
 function useLocalHotelDatabase() {
@@ -248,16 +383,47 @@ function renderResults(hotels, loc, rooms, children, price) {
   };
 }
 
+function getHotelBookingInfo(hotelId) {
+  try {
+    const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
+    const today = new Date(); today.setUTCHours(0,0,0,0);
+    const active = cached.find(b => {
+      if (b.status === 'cancelled') return false;
+      const cin  = new Date((b.check_in  || b.checkIn)  + 'T00:00:00Z');
+      const cout = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
+      return Number(b.hotel_id || b.hotelId) === Number(hotelId) && cout >= today;
+    });
+    if (!active) return null;
+    const cin  = new Date((active.check_in  || active.checkIn)  + 'T00:00:00Z');
+    const cout = new Date((active.check_out || active.checkOut) + 'T00:00:00Z');
+    const daysToCheckin  = Math.round((cin  - today) / (1000*60*60*24));
+    const daysToCheckout = Math.round((cout - today) / (1000*60*60*24));
+    if (today >= cin && today < cout) {
+      return { type: 'current', label: `🏨 ${daysToCheckout} night${daysToCheckout!==1?'s':''} remaining` };
+    }
+    if (daysToCheckin <= 1) {
+      return { type: 'imminent', label: daysToCheckin === 0 ? '⏰ Check-in today!' : '⏰ Check-in tomorrow!' };
+    }
+    return { type: 'booked', label: `✦ Booked · ${daysToCheckin} day${daysToCheckin!==1?'s':''} to check-in` };
+  } catch(_) { return null; }
+}
+
 function createHotelCard(hotel, delay=0) {
   const card = document.createElement('div');
   card.className = 'hotel-card';
   card.style.cssText = `animation:fadeUp 0.5s ease ${delay*0.07}s both`;
   const stars = '★'.repeat(hotel.stars)+'☆'.repeat(5-hotel.stars);
+  const bookingInfo = getHotelBookingInfo(hotel.id);
+  const isBooked = !!bookingInfo;
+  const bookedBadge = isBooked
+    ? `<div class="hotel-booked-badge ${bookingInfo.type}">${bookingInfo.label}</div>`
+    : '';
   card.innerHTML = `
     <div class="hotel-card-img" style="${hotel.cover ? `background:url('${hotel.cover}') center/cover no-repeat` : `background:linear-gradient(135deg,${hotel.color},#1a1a10)`}">
       <div class="hotel-card-img-inner" style="${hotel.cover ? 'opacity:0' : ''}">${hotel.initial}</div>
       <div class="hotel-badge">${hotel.stars} ★</div>
       <button class="hotel-view-photos">📷 View Photos</button>
+      ${bookedBadge}
     </div>
     <div class="hotel-card-body">
       <div class="hotel-card-name">${hotel.name}</div>
@@ -278,7 +444,7 @@ function createHotelCard(hotel, delay=0) {
           <span class="rating-count">${hotel.rating} (${hotel.reviews.toLocaleString()})</span>
         </div>
       </div>
-      <button class="hotel-book-btn">Reserve Now</button>
+      <button class="hotel-book-btn${isBooked?' booked-btn':''}">${isBooked ? '✦ View Reservation' : 'Reserve Now'}</button>
     </div>`;
 
   card.querySelector('.hotel-view-photos').addEventListener('click', e => { e.stopPropagation(); openGallery(hotel); });
@@ -286,6 +452,11 @@ function createHotelCard(hotel, delay=0) {
   const bookBtn = card.querySelector('.hotel-book-btn');
   bookBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    const bookingInfo = getHotelBookingInfo(hotel.id);
+    if (bookingInfo) {
+      window.location.href = 'reservations.html';
+      return;
+    }
     const curUser = JSON.parse(localStorage.getItem('aurum-user') || 'null');
     if (curUser) {
       openBookingModal(hotel);
@@ -658,6 +829,19 @@ if (payConfirm) {
         closeBooking();
         const ref = data.data?.reference || ('AUR-' + String(data.data?.id || '').padStart(6,'0'));
         showToast(`✔ Confirmed! Ref: ${ref} — View in My Reservations`, 'success');
+        // Save to cache immediately so hotel shows as booked
+        try {
+          const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
+          cached.unshift(data.data);
+          localStorage.setItem('aurum-bookings-cache', JSON.stringify(cached));
+          loadBookedHotels();
+          // Refresh hotel cards if results are visible
+          const loc = document.getElementById('s-location').value || 'Paris';
+          const rooms2 = parseInt(document.getElementById('s-rooms').value) || 1;
+          const children2 = parseInt(document.getElementById('s-children').value) || 0;
+          const price2 = document.getElementById('s-price').value || 'any';
+          renderResults(filterHotels(loc, rooms2, children2, price2), loc, rooms2, children2, price2);
+        } catch(_) {}
         // Add link to reservations after toast
         setTimeout(() => {
           const t = document.createElement('div');
