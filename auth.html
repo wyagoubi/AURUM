@@ -247,10 +247,16 @@
   </div>
 
   <!-- AI MODAL — redesigned chat -->
-  <div class="ai-modal" id="aiModal">
+  <div class="ai-modal" id="aiModal" style="pointer-events:none;">
     <div class="ai-modal-backdrop" id="aiBackdrop"></div>
-    <div class="ai-modal-window">
-      <div class="ai-modal-header">
+    <div class="ai-modal-window" id="aiWindow">
+      <!-- Resize handles -->
+      <div class="ai-resize-handle" id="aiResizeBottom"></div>
+      <div class="ai-resize-handle-left" id="aiResizeLeft"></div>
+      <div class="ai-resize-handle-right" id="aiResizeRight"></div>
+      <div class="ai-resize-handle-corner" id="aiResizeCorner"></div>
+
+      <div class="ai-modal-header" id="aiDragHandle">
         <div class="ai-modal-title-wrap">
           <div class="ai-avatar-ring">
             <div class="ai-avatar-inner">A</div>
@@ -263,6 +269,8 @@
         </div>
         <div class="ai-modal-actions">
           <button class="ai-clear-btn" id="aiClear" title="Clear conversation">↺</button>
+          <button class="ai-minimize-btn" id="aiMinimize" title="Minimize">—</button>
+          <button class="ai-maximize-btn" id="aiMaximize" title="Maximize">⤢</button>
           <button class="ai-modal-close" id="aiClose">✕</button>
         </div>
       </div>
