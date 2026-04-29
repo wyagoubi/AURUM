@@ -64,17 +64,16 @@
   </section>
 </main>
 
-<!-- Cancel Confirmation Modal with Reason -->
-<div class="modal-backdrop hidden" id="cancelModal">
-  <div class="modal cancel-modal">
-    <button class="modal-close" id="cancelClose" aria-label="Close">×</button>
-    <h2 class="cancel-title">Cancel reservation?</h2>
-    <p class="cancel-desc" id="cancelDesc">This action cannot be undone. Your card will not be charged for this stay.</p>
-    <label for="cancelReason" style="display:block; text-align:left; font-size:12px; margin-top:12px;">Reason (optional):</label>
-    <textarea id="cancelReason" rows="3" style="width:100%; padding:8px; margin-top:4px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:6px; resize:vertical;" placeholder="e.g., Change of plans, found better rate, emergency..."></textarea>
-    <div class="cancel-actions" style="margin-top:16px;">
-      <button class="btn btn-ghost" id="cancelKeep">Keep reservation</button>
-      <button class="btn btn-danger" id="cancelConfirm">Yes, cancel</button>
+<!-- New Cancel Modal (simple reason + confirm) -->
+<div id="cancelModal" class="modal-backdrop hidden">
+  <div class="modal cancel-modal" style="max-width: 400px;">
+    <button class="modal-close" id="cancelModalClose" aria-label="Close">×</button>
+    <h2 class="cancel-title">Cancel reservation</h2>
+    <p class="cancel-desc" id="cancelModalDesc">Please provide a reason (optional):</p>
+    <textarea id="cancelReason" rows="3" placeholder="e.g., Change of plans, found better rate, emergency..." style="width:100%; padding:10px; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:6px; resize:vertical; margin-bottom:16px;"></textarea>
+    <div class="cancel-actions" style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-ghost" id="cancelModalCloseBtn">Close</button>
+      <button class="btn btn-danger" id="cancelConfirmBtn">Confirm cancellation</button>
     </div>
   </div>
 </div>
