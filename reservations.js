@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* Cancel button appears for every non-cancelled booking */
+/* Direct cancel button (no modal, no reason required) */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -184,40 +184,37 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Cancel function (corrected URL) ── */
+/* ── Cancel function (direct, sends empty reason) ── */
 async function cancelBooking(bookingId, buttonElement) {
+  // Disable button to prevent double-click
   buttonElement.disabled = true;
   buttonElement.textContent = 'Cancelling...';
-  
   try {
     const response = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
       method: 'POST',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ reason: '' })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: '' })  // optional reason can be added later
     });
-    
     const data = await response.json();
     if (!response.ok || !data.success) {
-      throw new Error(data.error || `HTTP ${response.status}`);
+      throw new Error(data.error || 'Cancel failed');
     }
-    
     // Update local state
     const idx = allBookings.findIndex(b => b.id === bookingId);
     if (idx !== -1) allBookings[idx].status = 'cancelled';
-    renderList();
-    showToast('Reservation cancelled successfully.', 'success');
+    renderList();  // re-render to remove cancel button
+    showToast('Reservation cancelled.', 'success');
   } catch (err) {
     console.error('Cancel error:', err);
-    showToast(err.message || 'Could not cancel reservation. Please try again later.', 'error');
+    showToast(err.message || 'Could not cancel reservation', 'error');
+    // Re-enable button on error
     buttonElement.disabled = false;
     buttonElement.textContent = 'Cancel';
   }
 }
 
-/* ── Render list with cancel button for EVERY non-cancelled booking ── */
+/* ── Render list with cancel button for non-cancelled bookings ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -231,11 +228,11 @@ function renderList() {
   const term = searchTerm.toLowerCase();
   const filtered = allBookings.filter(b => {
     const s = statusOf(b);
-    if (activeFilter==='upcoming'  && s!=='upcoming') return false;
-    if (activeFilter==='past'      && s!=='past')      return false;
-    if (activeFilter==='cancelled' && s!=='cancelled') return false;
+    if (activeFilter === 'upcoming'  && s !== 'upcoming') return false;
+    if (activeFilter === 'past'      && s !== 'past') return false;
+    if (activeFilter === 'cancelled' && s !== 'cancelled') return false;
     if (!term) return true;
-    return [b.hotelName,b.reference,b.guestName].filter(Boolean).some(v=>v.toLowerCase().includes(term));
+    return [b.hotelName, b.reference, b.guestName].filter(Boolean).some(v => v.toLowerCase().includes(term));
   });
   if (!filtered.length) {
     listEl.innerHTML = `<div class="res-state"><h3 class="res-state-title">Nothing matches</h3><p>Try a different filter.</p></div>`;
@@ -243,12 +240,11 @@ function renderList() {
   }
   listEl.innerHTML = filtered.map(b => {
     const s = statusOf(b);
-    const showStatus = s;
     const isCancelled = b.status === 'cancelled';
-    const showCancelBtn = !isCancelled;
-    const cover     = HOTEL_COVERS[b.hotelName];
-    const roomImg   = ROOM_COVERS[b.roomType] || ROOM_COVERS['Deluxe Room'];
-    const imgStyle  = cover
+    const showCancelBtn = !isCancelled && s === 'upcoming'; // فقط الحجوزات المستقبلية غير الملغاة
+    const cover = HOTEL_COVERS[b.hotelName];
+    const roomImg = ROOM_COVERS[b.roomType] || ROOM_COVERS['Deluxe Room'];
+    const imgStyle = cover
       ? `background:url('${cover}') center/cover no-repeat`
       : `background:linear-gradient(135deg,#1a1208,#2a1f0a)`;
     return `
@@ -259,7 +255,7 @@ function renderList() {
         </div>
         <div class="res-card-body">
           <div class="res-meta-row">
-            <span class="res-status ${showStatus}">${statusLabel(showStatus)}</span>
+            <span class="res-status ${s}">${statusLabel(s)}</span>
             ${countdownBadge(b)}
           </div>
           <h2 class="res-hotel-name">${escapeHtml(b.hotelName)}</h2>
@@ -278,12 +274,12 @@ function renderList() {
           <div>
             <div class="res-total-label">Total</div>
             <div class="res-total">${fmtMoney(b.total)}</div>
-            ${b.paymentLast4?`<div class="res-total-label" style="margin-top:4px;font-size:10px">•••• ${escapeHtml(b.paymentLast4)}</div>`:''}
+            ${b.paymentLast4 ? `<div class="res-total-label" style="margin-top:4px;font-size:10px">•••• ${escapeHtml(b.paymentLast4)}</div>` : ''}
           </div>
           <div class="res-card-actions">
             ${showCancelBtn
               ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>`
-              : `<span style="opacity:.45;font-size:11px;letter-spacing:1px">Cancelled</span>`}
+              : `<span style="opacity:.45;font-size:11px;letter-spacing:1px">${b.status === 'cancelled' ? 'Cancelled' : 'Complete'}</span>`}
           </div>
         </div>
       </article>`;
@@ -320,7 +316,8 @@ async function load() {
     } else {
       throw new Error(data.error || 'Failed');
     }
-  } catch(err) {
+  } catch (err) {
+    console.error('Load error:', err);
     const shared = getSharedBookings();
     if (shared.length) {
       allBookings = shared.map(normalizeBooking);
