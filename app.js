@@ -745,42 +745,36 @@ if (payConfirm) {
       const nights   = Math.round((checkOut - checkIn) / (1000*60*60*24));
       const last4    = number.slice(-4);
       const totalPrice = _currentBookingHotel.price * nights * rooms;
+      const roomType = document.getElementById('bookingRoomType')?.value || 'Deluxe Room';
 
-      const newBooking = {
-        id: Date.now(),
-        hotelId: _currentBookingHotel.id,
-        hotelName: _currentBookingHotel.name,
-        roomType: document.getElementById('bookingRoomType')?.value || 'Deluxe Room',
-        rooms: rooms,
-        guests: rooms * 2,
-        checkIn: cin,
-        checkOut: cout,
-        nights: nights,
-        pricePerNight: _currentBookingHotel.price,
-        total: totalPrice,
-        status: 'confirmed',
-        paymentLast4: last4,
-        guestName: curUser?.name || name,
-        bookedBy: curUser?.email || 'guest',
-        createdAt: new Date().toISOString()
-      };
-
-      // Save to shared bookings
-      const added = addSharedBooking(newBooking);
-      if (!added) {
+      // ── Save to backend API ──
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          hotelId:       _currentBookingHotel.id,
+          roomType:      roomType,
+          rooms:         rooms,
+          guests:        rooms * 2,
+          checkIn:       cin,
+          checkOut:      cout,
+          pricePerNight: _currentBookingHotel.price,
+          paymentMethod: 'card',
+          paymentLast4:  last4,
+          guestName:     curUser?.name || name,
+          guestEmail:    curUser?.email || '',
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Booking failed. Please try again.', 'error');
         payConfirm.disabled = false; payConfirm.textContent = 'Pay & Confirm';
         return;
       }
 
-      // Also update local cache for reservations page (optional)
-      try {
-        const cached = JSON.parse(localStorage.getItem('aurum-bookings-cache') || '[]');
-        cached.unshift(newBooking);
-        localStorage.setItem('aurum-bookings-cache', JSON.stringify(cached));
-      } catch(_) {}
-
       closeBooking();
-      showToast(`✔ Confirmed! Total: $${totalPrice} — View in My Reservations`, 'success');
+      showToast(`✔ Confirmed! Total: $${totalPrice.toLocaleString()} — View in My Reservations`, 'success');
       setTimeout(() => {
         const t = document.createElement('div');
         t.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9999;background:var(--gold,#c9a96e);color:#000;padding:10px 18px;font-size:11px;letter-spacing:1px;cursor:pointer;border-radius:4px;';
