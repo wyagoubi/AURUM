@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════
    AURUM — app.js (integrated with backend API)
+   MODIFIED: AI booking opens modal directly, draggable FAB, clear chat confirmation
 ═══════════════════════════════════════════════ */
 
 // ================== API CONFIG ==================
@@ -914,14 +915,16 @@ function quickAsk(btn) {
   }, { once: true });
 })();
 
-// ══ CLEAR CHAT ══
+// ══ CLEAR CHAT (with confirmation) ══
 var aiClearBtn = document.getElementById('aiClear');
 if (aiClearBtn) {
   aiClearBtn.addEventListener('click', function() {
-    window._aiHistory = [];
-    try { localStorage.removeItem('aurum-chat-history'); } catch(e) {}
-    aiMessages.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Conversation cleared. How may I assist you?</div></div>';
-    document.getElementById('aiSuggestions').style.display = 'flex';
+    if (confirm('Clear all conversation history?')) {
+      window._aiHistory = [];
+      try { localStorage.removeItem('aurum-chat-history'); } catch(e) {}
+      aiMessages.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Conversation cleared. How may I assist you?</div></div>';
+      document.getElementById('aiSuggestions').style.display = 'flex';
+    }
   });
 }
 
@@ -994,7 +997,7 @@ if (aiClearBtn) {
   document.addEventListener('mouseup',  function() { dragging = false; win.classList.remove('dragging'); });
   document.addEventListener('touchend', function() { dragging = false; win.classList.remove('dragging'); });
 
-  // ── RESIZE ──
+  // ── RESIZE ── (unchanged)
   function makeResizer(handle, mode) {
     if (!handle) return;
     var resizing = false, startX, startY, startW, startH, startLeft, startTop;
@@ -1064,6 +1067,75 @@ if (aiClearBtn) {
   }
 })();
 
+// ══ DRAGGABLE FAB (Floating Action Button) ══
+let fab = document.getElementById('aiFab');
+if (fab) {
+  let isDraggingFab = false;
+  let fabStartX, fabStartY, fabOriginalLeft, fabOriginalTop;
+  // Load saved position from localStorage
+  const savedFabPos = localStorage.getItem('aurum-fab-position');
+  if (savedFabPos) {
+    try {
+      const pos = JSON.parse(savedFabPos);
+      fab.style.position = 'fixed';
+      fab.style.left = pos.left + 'px';
+      fab.style.top = pos.top + 'px';
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+    } catch(e) {}
+  }
+
+  fab.addEventListener('mousedown', startDrag);
+  fab.addEventListener('touchstart', startDrag, { passive: false });
+
+  function startDrag(e) {
+    e.preventDefault();
+    isDraggingFab = true;
+    const rect = fab.getBoundingClientRect();
+    fabOriginalLeft = rect.left;
+    fabOriginalTop = rect.top;
+    const clientX = e.clientX ?? e.touches[0].clientX;
+    const clientY = e.clientY ?? e.touches[0].clientY;
+    fabStartX = clientX - fabOriginalLeft;
+    fabStartY = clientY - fabOriginalTop;
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  }
+
+  function onDrag(e) {
+    if (!isDraggingFab) return;
+    e.preventDefault();
+    let clientX = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
+    let clientY = e.clientY ?? (e.touches ? e.touches[0].clientY : 0);
+    let newLeft = clientX - fabStartX;
+    let newTop = clientY - fabStartY;
+    // Constrain within window edges
+    newLeft = Math.max(8, Math.min(window.innerWidth - fab.offsetWidth - 8, newLeft));
+    newTop = Math.max(8, Math.min(window.innerHeight - fab.offsetHeight - 8, newTop));
+    fab.style.left = newLeft + 'px';
+    fab.style.top = newTop + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  }
+
+  function stopDrag() {
+    if (!isDraggingFab) return;
+    isDraggingFab = false;
+    // Save position
+    const left = parseInt(fab.style.left, 10);
+    const top = parseInt(fab.style.top, 10);
+    if (!isNaN(left) && !isNaN(top)) {
+      localStorage.setItem('aurum-fab-position', JSON.stringify({ left, top }));
+    }
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('touchend', stopDrag);
+  }
+}
+
 // ══ QUICK SUGGEST HIDE ON FIRST MESSAGE ══
 async function sendAI() {
   const text = aiInput.value.trim();
@@ -1084,11 +1156,10 @@ async function sendAI() {
     const data = await response.json();
     typing.classList.remove('ai-typing');
     if (data.success) {
-      const reply = data.data.response || data.data.reply || data.data.message || '';
+      let reply = data.data.response || data.data.reply || data.data.message || '';
 
       // Fix mixed language issue: if user wrote Arabic, force-clean Japanese chars
       let cleanedReply = reply;
-      // Remove any CJK characters that sneak into Arabic responses
       if (/[؀-ۿ]/.test(text)) {
         cleanedReply = reply.replace(/[　-鿿豈-﫿]/g, '').replace(/\s+/g,' ').trim();
       }
@@ -1096,8 +1167,6 @@ async function sendAI() {
       window._aiHistory.push({ role: 'user', content: text });
       window._aiHistory.push({ role: 'assistant', content: cleanedReply });
       if (window._aiHistory.length > 32) window._aiHistory = window._aiHistory.slice(-32);
-      try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
-      // Persist conversation
       try { localStorage.setItem('aurum-chat-history', JSON.stringify(window._aiHistory)); } catch(e) {}
 
       // Handle navigation/booking actions
@@ -1139,26 +1208,18 @@ function executeAiAction(action) {
 
     case 'BOOK': {
       const p = action.params || {};
-      // Find hotel by name (fuzzy match)
       const target = (p.hotelName || '').toLowerCase();
-      const hotel = window._hotelsData
-        ? window._hotelsData.find(h => h.name.toLowerCase().includes(target) || target.includes(h.name.toLowerCase().split(' ').slice(-1)[0].toLowerCase()))
-        : null;
-
+      // First try to find hotel in current database
+      const hotel = (window._hotelsData || hotelDatabase).find(h => 
+        h.name.toLowerCase().includes(target) || 
+        target.includes(h.name.toLowerCase().split(' ').slice(-1)[0].toLowerCase())
+      );
       if (hotel) {
         aiModal.classList.remove('open');
         document.body.style.overflow = '';
-        setTimeout(() => {
-          openBookingModal(hotel);
-          // Pre-fill dates if provided
-          if (p.checkIn)  document.getElementById('bookingCheckin').value  = p.checkIn;
-          if (p.checkOut) document.getElementById('bookingCheckout').value = p.checkOut;
-          if (p.rooms)    document.getElementById('bookingRooms').value    = p.rooms;
-          if (p.guests)   document.getElementById('bookingGuests').value   = p.guests;
-          updateSummary && updateSummary(hotel.price);
-        }, 300);
+        setTimeout(() => openBookingModal(hotel), 300);
       } else {
-        // Hotel not found — fallback to search
+        // If no hotel found, fallback to search
         const city = p.city || (p.hotelName || '').split(' ').pop();
         renderResults(filterHotels(city, 1, 0, 'any'), city, 1, 0, 'any');
         aiModal.classList.remove('open');
