@@ -329,3 +329,39 @@ body.light-mode .res-state { background: #fff; }
   .res-toolbar { flex-direction: column; align-items: stretch; }
   .res-filters { justify-content: flex-start; }
 }
+
+/* ── New elements ── */
+.res-card-art-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55));
+}
+.res-card-art-ref {
+  position: absolute; bottom: 14px; left: 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: rgba(201,169,97,0.9);
+  z-index: 1;
+}
+.res-room-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.res-room-img {
+  width: 56px; height: 40px;
+  object-fit: cover; border-radius: 6px;
+  border: 1px solid rgba(201,169,97,0.2);
+  flex-shrink: 0;
+}
+.res-countdown {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gold, #c9a961);
+  background: rgba(201,169,97,0.08);
+  border: 1px solid rgba(201,169,97,0.2);
+  padding: 3px 10px; border-radius: 999px;
+}
+.res-countdown.warning {
+  color: #e0a84a;
+  background: rgba(224,168,74,0.12);
+  border-color: rgba(224,168,74,0.3);
+}
+.res-status.current { color: #a8d8a8; }
