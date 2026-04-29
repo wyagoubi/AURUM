@@ -54,6 +54,13 @@ body.light-mode {
   --strip-bg:    #fafcfb;
 }
 
+.ai-fab {
+  transition: right 0.3s ease, left 0.3s ease, bottom 0.3s ease, transform 0.2s;
+}
+.ai-modal-window {
+  transition: right 0.3s ease, left 0.3s ease, bottom 0.3s ease;
+}
+
 /* ── BASE ── */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
@@ -67,6 +74,7 @@ body {
   transition: background 0.6s ease, color 0.6s ease, filter 0.6s ease;
   font-weight: 500;
 }
+
 a { text-decoration:none; color:inherit; }
 button { font-family:'Jost',sans-serif; }
 input, select, textarea { font-family:'Jost',sans-serif; }
