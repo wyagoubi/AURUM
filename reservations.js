@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* Simple Yes/No confirmation modal, no reason field */
+/* Simple Yes/No confirmation modal, one Cancel button per booking */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -260,7 +260,7 @@ function renderList() {
       </article>`;
   }).join('');
 
-  // Attach event listeners to cancel buttons
+  // Attach cancel button events
   document.querySelectorAll('.cancel-btn').forEach(btn => {
     btn.removeEventListener('click', handleCancelClick);
     btn.addEventListener('click', handleCancelClick);
@@ -283,13 +283,13 @@ function closeConfirmModal() {
 async function performCancel() {
   if (!pendingCancelId) return;
   if (confirmYes) confirmYes.disabled = true;
-  if (confirmYes) confirmYes.textContent = 'Processing...';
+  confirmYes.textContent = 'Processing...';
   try {
     const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: '' }) // empty reason
+      body: JSON.stringify({ reason: '' })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Cancel failed');
@@ -361,7 +361,6 @@ filtersEl?.addEventListener('click', e => {
 });
 if (confirmYes) confirmYes.addEventListener('click', performCancel);
 if (confirmNo) confirmNo.addEventListener('click', closeConfirmModal);
-// Close modal if clicking outside (optional)
 if (confirmModal) {
   confirmModal.addEventListener('click', (e) => {
     if (e.target === confirmModal) closeConfirmModal();
