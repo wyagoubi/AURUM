@@ -106,7 +106,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel function – بعد النجاح، إعادة تحميل القائمة من الخادم ── */
+/* ── Cancel function: reload full list after success ── */
 async function cancelBooking(bookingId, button) {
   button.disabled = true;
   button.textContent = 'Cancelling...';
@@ -118,18 +118,20 @@ async function cancelBooking(bookingId, button) {
       body: JSON.stringify({ reason: '' })
     });
     const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Cancel failed');
-    showToast('Reservation cancelled. Refreshing list...', 'success');
-    // إعادة تحميل القائمة بالكامل من الخادم
-    await load();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    showToast('✓ Cancelled. Refreshing...', 'success');
+    await load(); // جلب القائمة من الخادم مرة أخرى
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Cancel error:', err);
+    showToast(`✗ ${err.message}`, 'error');
     button.disabled = false;
     button.textContent = 'Cancel';
   }
 }
 
-/* ── Render list ── */
+/* ── Render list (تظهر أزرار الإلغاء فقط للحجوزات غير الملغاة) ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
@@ -177,14 +179,13 @@ function renderList() {
       </article>`;
   }).join('');
 
-  // Attach cancel button events
   document.querySelectorAll('.cancel-btn').forEach(btn => {
     const id = parseInt(btn.dataset.id);
     btn.addEventListener('click', () => cancelBooking(id, btn));
   });
 }
 
-/* ── Load bookings ── */
+/* ── Load bookings from server ── */
 async function load() {
   if (!user) {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
