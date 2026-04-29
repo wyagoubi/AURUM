@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* MODIFIED: Added cancel reason (optional) */
+/* MODIFIED: Simple cancel modal with optional reason */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -80,11 +80,11 @@ const ROOM_COVERS = {
   'Presidential Suite': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=300&q=80',
 };
 
-/* ── Cache helpers (keep for compatibility) ── */
+/* ── Cache helpers ── */
 function saveCache(data) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(_){} }
 function loadCache()     { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); } catch(_){ return []; } }
 
-/* ── Shared bookings helpers ── */
+/* ── Shared bookings helpers (fallback) ── */
 function getSharedBookings() {
   try { return JSON.parse(localStorage.getItem(SHARED_KEY) || '[]'); } catch { return []; }
 }
@@ -101,12 +101,15 @@ let searchTerm   = '';
 const listEl        = document.getElementById('resList');
 const searchEl      = document.getElementById('resSearch');
 const filtersEl     = document.getElementById('resFilters');
-const cancelModal   = document.getElementById('cancelModal');
-const cancelDesc    = document.getElementById('cancelDesc');
-const cancelConfirm = document.getElementById('cancelConfirm');
-const cancelKeep    = document.getElementById('cancelKeep');
-const cancelClose   = document.getElementById('cancelClose');
-const cancelReasonInput = document.getElementById('cancelReason'); // new
+
+// New modal elements
+const cancelModal       = document.getElementById('cancelModal');
+const cancelModalDesc   = document.getElementById('cancelModalDesc');
+const cancelReasonInput = document.getElementById('cancelReason');
+const cancelModalClose  = document.getElementById('cancelModalClose');
+const cancelModalCloseBtn = document.getElementById('cancelModalCloseBtn');
+const cancelConfirmBtn  = document.getElementById('cancelConfirmBtn');
+
 let pendingCancelId = null;
 
 /* ── Helpers ── */
@@ -192,7 +195,7 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Render ── */
+/* ── Render list ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -264,7 +267,7 @@ function renderList() {
   }).join('');
 }
 
-/* ── Load: from backend API ── */
+/* ── Load bookings ── */
 async function load() {
   if (!user) {
     listEl.innerHTML = `
@@ -287,7 +290,6 @@ async function load() {
       throw new Error(data.error || 'Failed');
     }
   } catch(err) {
-    // fallback to localStorage
     const shared = getSharedBookings();
     if (shared.length) {
       allBookings = shared.map(normalizeBooking);
@@ -315,32 +317,36 @@ filtersEl?.addEventListener('click', e => {
   renderList();
 });
 
+// Cancel button click on each card
 listEl?.addEventListener('click', e => {
   const btn = e.target.closest('[data-cancel]');
   if (!btn) return;
-  pendingCancelId = Number(btn.dataset.cancel);
-  const b = allBookings.find(x => x.id === pendingCancelId);
-  if (cancelDesc) cancelDesc.textContent = b
-    ? `Cancel your stay at ${b.hotelName} (${fmtDate(b.checkIn)} – ${fmtDate(b.checkOut)})?`
-    : 'Cancel this reservation?';
+  const id = Number(btn.dataset.cancel);
+  const booking = allBookings.find(b => b.id === id);
+  if (!booking) return;
+  pendingCancelId = id;
+  if (cancelModalDesc) {
+    cancelModalDesc.textContent = `Cancel stay at ${booking.hotelName} (${fmtDate(booking.checkIn)} – ${fmtDate(booking.checkOut)})? Reason (optional):`;
+  }
   if (cancelReasonInput) cancelReasonInput.value = '';
   cancelModal?.classList.remove('hidden');
 });
 
+// Close modal functions
 function closeCancelModal() {
   cancelModal?.classList.add('hidden');
   pendingCancelId = null;
-  if (cancelConfirm) { cancelConfirm.disabled = false; cancelConfirm.textContent = 'Yes, cancel'; }
 }
-cancelClose?.addEventListener('click', closeCancelModal);
-cancelKeep?.addEventListener('click', closeCancelModal);
+cancelModalClose?.addEventListener('click', closeCancelModal);
+cancelModalCloseBtn?.addEventListener('click', closeCancelModal);
 cancelModal?.addEventListener('click', e => { if (e.target === cancelModal) closeCancelModal(); });
 
-cancelConfirm?.addEventListener('click', async () => {
+// Confirm cancellation
+cancelConfirmBtn?.addEventListener('click', async () => {
   if (!pendingCancelId) return;
   const reason = cancelReasonInput ? cancelReasonInput.value.trim() : '';
-  cancelConfirm.disabled = true;
-  cancelConfirm.textContent = 'Cancelling…';
+  cancelConfirmBtn.disabled = true;
+  cancelConfirmBtn.textContent = 'Cancelling...';
   try {
     const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
       method: 'POST',
@@ -350,17 +356,17 @@ cancelConfirm?.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Cancel failed');
-
-    const localIdx = allBookings.findIndex(b => b.id === pendingCancelId);
-    if (localIdx !== -1) allBookings[localIdx].status = 'cancelled';
-
+    // Update local state
+    const idx = allBookings.findIndex(b => b.id === pendingCancelId);
+    if (idx !== -1) allBookings[idx].status = 'cancelled';
     closeCancelModal();
     renderList();
     showToast('Reservation cancelled.', 'success');
-  } catch(err) {
-    cancelConfirm.disabled = false;
-    cancelConfirm.textContent = 'Yes, cancel';
+  } catch (err) {
     showToast(err.message || 'Could not cancel', 'error');
+  } finally {
+    cancelConfirmBtn.disabled = false;
+    cancelConfirmBtn.textContent = 'Confirm cancellation';
   }
 });
 
