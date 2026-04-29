@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* Simple Yes/No confirmation modal, one Cancel button per booking */
+/* Direct cancel button (no confirmation modal) */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -37,8 +37,7 @@ function showToast(msg, type = 'success') {
 }
 
 /* ── Auth ── */
-const user  = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-const token = localStorage.getItem('aurum-token') || '';
+const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
 
 const navUserLogged = document.getElementById('navUserLogged');
 const navAvatar     = document.getElementById('navAvatar');
@@ -97,14 +96,10 @@ function saveSharedBookings(bookings) {
 let allBookings  = [];
 let activeFilter = 'all';
 let searchTerm   = '';
-let pendingCancelId = null;
 
 const listEl        = document.getElementById('resList');
 const searchEl      = document.getElementById('resSearch');
 const filtersEl     = document.getElementById('resFilters');
-const confirmModal  = document.getElementById('confirmModal');
-const confirmYes    = document.getElementById('confirmYes');
-const confirmNo     = document.getElementById('confirmNo');
 
 /* ── Helpers ── */
 function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0}); }
@@ -189,7 +184,34 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Render list ── */
+/* ── Cancel function (direct, no confirm) ── */
+async function cancelBooking(bookingId, buttonElement) {
+  // Disable button to prevent double click
+  buttonElement.disabled = true;
+  buttonElement.textContent = 'Cancelling...';
+  try {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: '' })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Cancel failed');
+    
+    // Update local state
+    const idx = allBookings.findIndex(b => b.id === bookingId);
+    if (idx !== -1) allBookings[idx].status = 'cancelled';
+    renderList(); // re-render to update UI
+    showToast('Reservation cancelled.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Could not cancel', 'error');
+    buttonElement.disabled = false;
+    buttonElement.textContent = 'Cancel';
+  }
+}
+
+/* ── Render list with direct cancel buttons ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -260,54 +282,12 @@ function renderList() {
       </article>`;
   }).join('');
 
-  // Attach cancel button events
+  // Attach event listeners to cancel buttons (direct cancel, no modal)
   document.querySelectorAll('.cancel-btn').forEach(btn => {
-    btn.removeEventListener('click', handleCancelClick);
-    btn.addEventListener('click', handleCancelClick);
+    const id = parseInt(btn.dataset.id);
+    btn.removeEventListener('click', (e) => cancelBooking(id, btn));
+    btn.addEventListener('click', (e) => cancelBooking(id, btn));
   });
-}
-
-function handleCancelClick(e) {
-  const btn = e.currentTarget;
-  const id = parseInt(btn.dataset.id);
-  if (isNaN(id)) return;
-  pendingCancelId = id;
-  if (confirmModal) confirmModal.classList.remove('hidden');
-}
-
-function closeConfirmModal() {
-  if (confirmModal) confirmModal.classList.add('hidden');
-  pendingCancelId = null;
-}
-
-async function performCancel() {
-  if (!pendingCancelId) return;
-  if (confirmYes) confirmYes.disabled = true;
-  confirmYes.textContent = 'Processing...';
-  try {
-    const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: '' })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Cancel failed');
-    // Update local state
-    const idx = allBookings.findIndex(b => b.id === pendingCancelId);
-    if (idx !== -1) allBookings[idx].status = 'cancelled';
-    closeConfirmModal();
-    renderList();
-    showToast('Reservation cancelled.', 'success');
-  } catch (err) {
-    showToast(err.message || 'Could not cancel', 'error');
-    closeConfirmModal();
-  } finally {
-    if (confirmYes) {
-      confirmYes.disabled = false;
-      confirmYes.textContent = 'Yes, cancel';
-    }
-  }
 }
 
 /* ── Load bookings ── */
@@ -359,12 +339,5 @@ filtersEl?.addEventListener('click', e => {
   activeFilter = btn.dataset.filter;
   renderList();
 });
-if (confirmYes) confirmYes.addEventListener('click', performCancel);
-if (confirmNo) confirmNo.addEventListener('click', closeConfirmModal);
-if (confirmModal) {
-  confirmModal.addEventListener('click', (e) => {
-    if (e.target === confirmModal) closeConfirmModal();
-  });
-}
 
 load();
