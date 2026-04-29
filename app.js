@@ -1220,6 +1220,9 @@ window.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.nav-links')?.classList.toggle('mobile-open');
     });
   }
+    makeFabDraggable();
+  setupClearChat();
+  overrideAiButtons();
   loadChatHistory(); // load chat for current user
 });
 
@@ -1236,4 +1239,176 @@ window.addEventListener('DOMContentLoaded', () => {
       loggedDiv.insertBefore(dashLink, loggedDiv.firstChild);
     }
   }
+   // ========== CHAT FUNCTIONS (private per user) ==========
+function getChatStorageKey() {
+  const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+  return user?.email ? `aurum-chat-${user.email}` : 'aurum-chat-temp';
+}
+
+function loadChatHistory() {
+  const key = getChatStorageKey();
+  const saved = localStorage.getItem(key);
+  const messagesContainer = document.getElementById('aiMessages');
+  if (!messagesContainer) return;
+  if (saved) {
+    try {
+      const history = JSON.parse(saved);
+      messagesContainer.innerHTML = '';
+      history.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `ai-msg ai-msg--${msg.role === 'user' ? 'user' : 'bot'}`;
+        div.innerHTML = `<div class="ai-msg-avatar">${msg.role === 'user' ? '👤' : 'A'}</div><div class="ai-msg-bubble">${escapeHtml(msg.content)}</div>`;
+        messagesContainer.appendChild(div);
+      });
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch(e) {}
+  } else {
+    messagesContainer.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Welcome to AURUM Concierge. How can I help you?</div></div>';
+  }
+}
+
+function saveChatMessage(role, content) {
+  const key = getChatStorageKey();
+  const saved = localStorage.getItem(key);
+  let history = saved ? JSON.parse(saved) : [];
+  history.push({ role, content });
+  if (history.length > 50) history = history.slice(-50);
+  localStorage.setItem(key, JSON.stringify(history));
+  loadChatHistory();
+}
+
+function appendMessage(text, role) {
+  const messagesContainer = document.getElementById('aiMessages');
+  if (!messagesContainer) return;
+  const div = document.createElement('div');
+  div.className = `ai-msg ai-msg--${role}`;
+  div.innerHTML = `<div class="ai-msg-avatar">${role === 'user' ? '👤' : 'A'}</div><div class="ai-msg-bubble">${escapeHtml(text)}</div>`;
+  messagesContainer.appendChild(div);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  saveChatMessage(role, text);
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+function sendAIMessage() {
+  const input = document.getElementById('aiInput');
+  const text = input?.value.trim();
+  if (!text) return;
+  appendMessage(text, 'user');
+  input.value = '';
+  setTimeout(() => {
+    const lower = text.toLowerCase();
+    let reply = '';
+    if (lower.includes('paris')) reply = 'Paris has beautiful hotels like Le Grand Hôtel. Use the search bar to see them. ✨';
+    else if (lower.includes('dubai')) reply = 'Dubai offers luxury hotels like Burj Al Arab. Search now! 🏨';
+    else if (lower.includes('london')) reply = 'London has elegant hotels like The Ritz. Try searching. 🇬🇧';
+    else if (lower.includes('help')) reply = 'You can search by city, rooms, budget. Click "Book Now" to reserve. Need more help?';
+    else reply = 'Tell me a city (Paris, Dubai, London) or ask for help. I’m your concierge. ✨';
+    appendMessage(reply, 'bot');
+  }, 500);
+}
+
+// ========== DRAGGABLE FAB ==========
+function makeFabDraggable() {
+  const fab = document.getElementById('aiFab');
+  if (!fab) return;
+  let isDragging = false, startX, startY, initialLeft, initialTop;
+  const savedPos = localStorage.getItem('aurum-fab-position');
+  if (savedPos) {
+    try {
+      const pos = JSON.parse(savedPos);
+      fab.style.position = 'fixed';
+      fab.style.left = pos.left + 'px';
+      fab.style.top = pos.top + 'px';
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+    } catch(e) {}
+  }
+  fab.addEventListener('mousedown', startDrag);
+  fab.addEventListener('touchstart', startDrag, { passive: false });
+  function startDrag(e) {
+    e.preventDefault();
+    isDragging = true;
+    const rect = fab.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+    const clientX = e.clientX ?? e.touches[0].clientX;
+    const clientY = e.clientY ?? e.touches[0].clientY;
+    startX = clientX - initialLeft;
+    startY = clientY - initialTop;
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  }
+  function onDrag(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    let clientX = e.clientX ?? (e.touches ? e.touches[0].clientX : 0);
+    let clientY = e.clientY ?? (e.touches ? e.touches[0].clientY : 0);
+    let newLeft = clientX - startX;
+    let newTop = clientY - startY;
+    newLeft = Math.max(8, Math.min(window.innerWidth - fab.offsetWidth - 8, newLeft));
+    newTop = Math.max(8, Math.min(window.innerHeight - fab.offsetHeight - 8, newTop));
+    fab.style.left = newLeft + 'px';
+    fab.style.top = newTop + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  }
+  function stopDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    const left = parseInt(fab.style.left, 10);
+    const top = parseInt(fab.style.top, 10);
+    if (!isNaN(left) && !isNaN(top)) {
+      localStorage.setItem('aurum-fab-position', JSON.stringify({ left, top }));
+    }
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('touchend', stopDrag);
+  }
+}
+
+// ========== CLEAR CHAT BUTTON ==========
+function setupClearChat() {
+  const clearBtn = document.getElementById('aiClear');
+  if (!clearBtn) return;
+  clearBtn.addEventListener('click', () => {
+    if (confirm('🗑️ Clear all conversation history?')) {
+      const key = getChatStorageKey();
+      localStorage.removeItem(key);
+      const messagesContainer = document.getElementById('aiMessages');
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '<div class="ai-msg ai-msg--bot"><div class="ai-msg-avatar">A</div><div class="ai-msg-bubble">Conversation cleared. How may I assist you?</div></div>';
+      }
+    }
+  });
+}
+
+// ========== OPEN CHAT MODAL ==========
+function openChatModal() {
+  const modal = document.getElementById('aiModal');
+  if (modal) modal.classList.add('open');
+  loadChatHistory();
+}
+
+// ========== OVERRIDE EXISTING AI BUTTONS ==========
+function overrideAiButtons() {
+  const openBtn = document.getElementById('openAiChat');
+  const fab = document.getElementById('aiFab');
+  if (openBtn) openBtn.onclick = openChatModal;
+  if (fab) fab.onclick = openChatModal;
+  const sendBtn = document.getElementById('aiSend');
+  if (sendBtn) sendBtn.onclick = sendAIMessage;
+  const input = document.getElementById('aiInput');
+  if (input) input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendAIMessage(); });
+}
 })();
