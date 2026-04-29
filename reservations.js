@@ -184,27 +184,34 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Cancel function (direct, no modal) ── */
+/* ── Cancel function (corrected URL) ── */
 async function cancelBooking(bookingId, buttonElement) {
   buttonElement.disabled = true;
   buttonElement.textContent = 'Cancelling...';
+  
   try {
-    const res = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
+    const response = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: '' }) // optional reason field remains
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reason: '' })
     });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Cancel failed');
+    
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
     
     // Update local state
     const idx = allBookings.findIndex(b => b.id === bookingId);
     if (idx !== -1) allBookings[idx].status = 'cancelled';
-    renderList(); // re-render to remove button and update status
-    showToast('Reservation cancelled.', 'success');
+    renderList();
+    showToast('Reservation cancelled successfully.', 'success');
   } catch (err) {
-    showToast(err.message || 'Could not cancel', 'error');
+    console.error('Cancel error:', err);
+    showToast(err.message || 'Could not cancel reservation. Please try again later.', 'error');
     buttonElement.disabled = false;
     buttonElement.textContent = 'Cancel';
   }
@@ -238,7 +245,6 @@ function renderList() {
     const s = statusOf(b);
     const showStatus = s;
     const isCancelled = b.status === 'cancelled';
-    // Show cancel button for every booking that is NOT cancelled
     const showCancelBtn = !isCancelled;
     const cover     = HOTEL_COVERS[b.hotelName];
     const roomImg   = ROOM_COVERS[b.roomType] || ROOM_COVERS['Deluxe Room'];
