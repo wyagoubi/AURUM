@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* Simplified: Cancel button ALWAYS visible for every booking (if not already cancelled) */
+/* بعد الإلغاء، يتم إعادة تحميل القائمة من الخادم */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -52,11 +52,20 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
   window.location.href = 'auth.html';
 });
 
-/* ── Images (abbreviated, keep your full list) ── */
+/* ── Images (كاملة) ── */
 const HOTEL_COVERS = {
   'Le Grand Aurum Paris': 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
   'Aurum Palace London': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
-  // ... add all your hotels
+  'Aurum Medina Marrakesh': 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80',
+  'Aurum Sakura Tokyo': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
+  'Aurum Overwater Maldives': 'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80',
+  'Aurum Summit Aspen': 'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
+  'Aurum Duomo Florence': 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80',
+  'Aurum Sentosa Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80',
+  'Aurum Royale Dubai': 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80',
+  'Aurum Bosphorus Istanbul': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=400&q=80',
+  'Aurum Riviera Santorini': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
+  'Aurum Zen Bali': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
 };
 const ROOM_COVERS = {
   'Deluxe Room': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&q=80',
@@ -97,7 +106,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel function ── */
+/* ── Cancel function – بعد النجاح، إعادة تحميل القائمة من الخادم ── */
 async function cancelBooking(bookingId, button) {
   button.disabled = true;
   button.textContent = 'Cancelling...';
@@ -110,11 +119,9 @@ async function cancelBooking(bookingId, button) {
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || 'Cancel failed');
-    // Update local state
-    const idx = allBookings.findIndex(b => b.id === bookingId);
-    if (idx !== -1) allBookings[idx].status = 'cancelled';
-    renderList();
-    showToast('Reservation cancelled.', 'success');
+    showToast('Reservation cancelled. Refreshing list...', 'success');
+    // إعادة تحميل القائمة بالكامل من الخادم
+    await load();
   } catch (err) {
     showToast(err.message, 'error');
     button.disabled = false;
@@ -122,7 +129,7 @@ async function cancelBooking(bookingId, button) {
   }
 }
 
-/* ── Render list – Cancel button appears for EVERY non-cancelled booking ── */
+/* ── Render list ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
