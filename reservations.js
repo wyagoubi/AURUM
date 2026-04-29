@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* FINAL: بعد الإلغاء الناجح، يتم إعادة تحميل القائمة من الخادم */
+/* FIXED: normalizeBooking تحترم status من الخادم + إصلاح أزرار الإلغاء */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -88,13 +88,27 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 function escapeHtml(s) { return String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+/* ── FIX #1: normalizeBooking تحترم status=cancelled من الخادم أولاً ── */
 function normalizeBooking(b) {
-  let status = b.status || 'confirmed';
-  // تحويل الحالة إلى نص مفهوم
-  if (status === 'cancelled') status = 'cancelled';
-  else if (new Date(b.check_out) < new Date()) status = 'past';
-  else if (new Date(b.check_in) <= new Date() && new Date(b.check_out) >= new Date()) status = 'current';
-  else status = 'upcoming';
+  // إذا الخادم قال cancelled → نحترمها مباشرة بدون إعادة حساب
+  const serverStatus = b.status || 'confirmed';
+
+  let status;
+  if (serverStatus === 'cancelled') {
+    status = 'cancelled';
+  } else {
+    // احسب الحالة الفعلية بناءً على التواريخ
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+    const checkIn  = new Date((b.check_in  || b.checkIn)  + 'T00:00:00Z');
+    const checkOut = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
+
+    if (checkOut < now)                         status = 'past';
+    else if (checkIn <= now && checkOut >= now)  status = 'current';
+    else                                         status = 'upcoming';
+  }
+
   return {
     id: b.id,
     reference: b.reference || ('AUR-' + String(b.id).padStart(6, '0')),
@@ -112,7 +126,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel function: إظهار تأكيد، ثم إرسال طلب، ثم إعادة تحميل القائمة ── */
+/* ── Cancel function ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
   button.disabled = true;
@@ -139,7 +153,7 @@ async function cancelBooking(bookingId, button) {
   }
 }
 
-/* ── Render list (تظهر أزرار الإلغاء فقط للحجوزات التي حالتها ليست cancelled) ── */
+/* ── Render list ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
@@ -147,9 +161,9 @@ function renderList() {
   }
   const term = searchTerm.toLowerCase();
   const filtered = allBookings.filter(b => {
-    if (activeFilter === 'upcoming' && b.status !== 'upcoming') return false;
-    if (activeFilter === 'past' && b.status !== 'past') return false;
-    if (activeFilter === 'cancelled' && b.status !== 'cancelled') return false;
+    if (activeFilter === 'upcoming'  && b.status !== 'upcoming')   return false;
+    if (activeFilter === 'past'      && b.status !== 'past')        return false;
+    if (activeFilter === 'cancelled' && b.status !== 'cancelled')   return false;
     if (!term) return true;
     return (b.hotelName + b.reference).toLowerCase().includes(term);
   });
@@ -159,8 +173,8 @@ function renderList() {
   }
   listEl.innerHTML = filtered.map(b => {
     const isCancelled = b.status === 'cancelled';
-    const cover = HOTEL_COVERS[b.hotelName] || '';
-    const roomImg = ROOM_COVERS[b.roomType] || ROOM_COVERS['Deluxe Room'];
+    const cover   = HOTEL_COVERS[b.hotelName] || '';
+    const roomImg = ROOM_COVERS[b.roomType]   || ROOM_COVERS['Deluxe Room'];
     return `
       <article class="res-card">
         <div class="res-card-art" style="background:url('${cover}') center/cover no-repeat;">
@@ -182,21 +196,22 @@ function renderList() {
         <div class="res-card-side">
           <div class="res-total">${fmtMoney(b.total)}</div>
           ${b.paymentLast4 ? `<div style="font-size:10px">•••• ${b.paymentLast4}</div>` : ''}
-          ${!isCancelled ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>` : '<span class="cancelled-badge">Cancelled</span>'}
+          ${!isCancelled
+            ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>`
+            : '<span class="cancelled-badge">Cancelled</span>'
+          }
         </div>
       </article>`;
   }).join('');
 
-  // إضافة مستمعي الأحداث لأزرار الإلغاء
+  /* ── FIX #2: استخدام onclick بدلاً من addEventListener لتجنب تكرار المستمعين ── */
   document.querySelectorAll('.cancel-btn').forEach(btn => {
     const id = parseInt(btn.dataset.id);
     if (isNaN(id)) return;
-    // منع تكرار المستمعين
-    btn.removeEventListener('click', () => {});
-    btn.addEventListener('click', (e) => {
+    btn.onclick = (e) => {
       e.preventDefault();
       cancelBooking(id, btn);
-    });
+    };
   });
 }
 
