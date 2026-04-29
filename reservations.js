@@ -1,7 +1,9 @@
 /* AURUM — reservations.js */
+/* MODIFIED: Uses shared bookings (aurum-shared-bookings) so all accounts see the same reservations. */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
+const SHARED_KEY = 'aurum-shared-bookings';
 const NOTIF_KEY  = 'aurum-notif-seen';
 const body = document.body;
 
@@ -74,9 +76,19 @@ const ROOM_COVERS = {
   'Presidential Suite': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=300&q=80',
 };
 
-/* ── Cache ── */
+/* ── Cache helpers (keep for compatibility) ── */
 function saveCache(data) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(_){} }
 function loadCache()     { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); } catch(_){ return []; } }
+
+/* ── Shared bookings helpers ── */
+function getSharedBookings() {
+  try { return JSON.parse(localStorage.getItem(SHARED_KEY) || '[]'); } catch { return []; }
+}
+function saveSharedBookings(bookings) {
+  localStorage.setItem(SHARED_KEY, JSON.stringify(bookings));
+  // also update cache for immediate UI
+  saveCache(bookings);
+}
 
 /* ── State ── */
 let allBookings  = [];
@@ -93,7 +105,7 @@ const cancelKeep    = document.getElementById('cancelKeep');
 const cancelClose   = document.getElementById('cancelClose');
 let pendingCancelId = null;
 
-/* ── Helpers ── */
+/* ── Helpers (unchanged) ── */
 function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0}); }
 function fmtDate(iso) {
   if (!iso) return '—';
@@ -176,7 +188,7 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Render ── */
+/* ── Render (unchanged layout) ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -248,39 +260,39 @@ function renderList() {
   }).join('');
 }
 
-/* ── Load ── */
-async function load() {
-  // Show cache immediately (works even after sign-out)
-  const cached = loadCache();
-  if (cached.length) { allBookings = cached; renderList(); checkNotifications(allBookings); }
-
-  if (!user && !token) {
-    if (!cached.length) {
-      listEl.innerHTML = `
-        <div class="res-state">
-          <h3 class="res-state-title">Please sign in</h3>
-          <p>Sign in to view your AURUM reservations.</p>
-          <a class="btn-ghost" href="auth.html" style="display:inline-block;margin-top:22px;text-decoration:none">Sign in</a>
-        </div>`;
-    }
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/bookings/me`, {
-      credentials: 'include',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    });
-    if (res.status === 401) return; // keep cached
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    allBookings = (data.data||[]).map(normalizeBooking);
-    saveCache(allBookings);
+/* ── Load: prioritise shared bookings ── */
+function load() {
+  // 1. Try to load from shared localStorage (aurum-shared-bookings)
+  const shared = getSharedBookings();
+  if (shared.length) {
+    allBookings = shared.map(normalizeBooking);
     renderList();
     checkNotifications(allBookings);
-  } catch(_) {
-    if (!cached.length)
-      showToast('Could not connect — showing cached data.', 'error');
+    return;
+  }
+  // 2. Fallback: load from cache if any
+  const cached = loadCache();
+  if (cached.length) {
+    allBookings = cached;
+    renderList();
+    checkNotifications(allBookings);
+    return;
+  }
+  // 3. If nothing, show "no reservations" or sign-in prompt
+  if (!user && !token) {
+    listEl.innerHTML = `
+      <div class="res-state">
+        <h3 class="res-state-title">Please sign in</h3>
+        <p>Sign in to view your AURUM reservations.</p>
+        <a class="btn-ghost" href="auth.html" style="display:inline-block;margin-top:22px;text-decoration:none">Sign in</a>
+      </div>`;
+  } else {
+    listEl.innerHTML = `
+      <div class="res-state">
+        <h3 class="res-state-title">No reservations yet</h3>
+        <p>Book a hotel to see it here.</p>
+        <a class="btn-ghost" href="index.html" style="display:inline-block;margin-top:22px;text-decoration:none">Discover hotels</a>
+      </div>`;
   }
 }
 
@@ -320,16 +332,19 @@ cancelConfirm?.addEventListener('click', async () => {
   cancelConfirm.disabled = true;
   cancelConfirm.textContent = 'Cancelling…';
   try {
-    const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Failed');
-    // Update cache instantly
-    const idx = allBookings.findIndex(b => b.id === pendingCancelId);
-    if (idx >= 0) allBookings[idx] = { ...allBookings[idx], status: 'cancelled' };
+    // 1. Update shared bookings
+    let shared = getSharedBookings();
+    const idx = shared.findIndex(b => b.id === pendingCancelId);
+    if (idx !== -1) {
+      // Instead of deleting, we could mark as cancelled, but user expects removal from list.
+      // For shared bookings, we delete it so it disappears from all accounts.
+      shared.splice(idx, 1);
+      saveSharedBookings(shared);
+    }
+    // 2. Update current allBookings array
+    const localIdx = allBookings.findIndex(b => b.id === pendingCancelId);
+    if (localIdx !== -1) allBookings.splice(localIdx, 1);
+    // 3. Update cache
     saveCache(allBookings);
     closeCancelModal();
     renderList();
