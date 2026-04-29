@@ -60,14 +60,18 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
 
 /* ── Images ── */
 const HOTEL_COVERS = {
-  'Le Grand Aurum Paris':    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
-  'Aurum Palace London':     'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
-  'Aurum Medina Marrakesh':  'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80',
-  'Aurum Sakura Tokyo':      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
-  'Aurum Overwater Maldives':'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80',
-  'Aurum Summit Aspen':      'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
-  'Aurum Duomo Florence':    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80',
-  'Aurum Sentosa Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80',
+  'Le Grand Aurum Paris':     'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
+  'Aurum Palace London':      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
+  'Aurum Medina Marrakesh':   'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80',
+  'Aurum Sakura Tokyo':       'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
+  'Aurum Overwater Maldives': 'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80',
+  'Aurum Summit Aspen':       'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
+  'Aurum Duomo Florence':     'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80',
+  'Aurum Sentosa Singapore':  'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80',
+  'Aurum Royale Dubai':       'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80',
+  'Aurum Bosphorus Istanbul': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=400&q=80',
+  'Aurum Riviera Santorini':  'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
+  'Aurum Zen Bali':           'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
 };
 const ROOM_COVERS = {
   'Deluxe Room':        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&q=80',
@@ -260,39 +264,43 @@ function renderList() {
   }).join('');
 }
 
-/* ── Load: prioritise shared bookings ── */
-function load() {
-  // 1. Try to load from shared localStorage (aurum-shared-bookings)
-  const shared = getSharedBookings();
-  if (shared.length) {
-    allBookings = shared.map(normalizeBooking);
-    renderList();
-    checkNotifications(allBookings);
-    return;
-  }
-  // 2. Fallback: load from cache if any
-  const cached = loadCache();
-  if (cached.length) {
-    allBookings = cached;
-    renderList();
-    checkNotifications(allBookings);
-    return;
-  }
-  // 3. If nothing, show "no reservations" or sign-in prompt
-  if (!user && !token) {
+/* ── Load: from backend API ── */
+async function load() {
+  if (!user) {
     listEl.innerHTML = `
       <div class="res-state">
         <h3 class="res-state-title">Please sign in</h3>
         <p>Sign in to view your AURUM reservations.</p>
         <a class="btn-ghost" href="auth.html" style="display:inline-block;margin-top:22px;text-decoration:none">Sign in</a>
       </div>`;
-  } else {
-    listEl.innerHTML = `
-      <div class="res-state">
-        <h3 class="res-state-title">No reservations yet</h3>
-        <p>Book a hotel to see it here.</p>
-        <a class="btn-ghost" href="index.html" style="display:inline-block;margin-top:22px;text-decoration:none">Discover hotels</a>
-      </div>`;
+    return;
+  }
+  listEl.innerHTML = '<div class="res-state"><p style="color:var(--text-m)">Loading reservations…</p></div>';
+  try {
+    const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      allBookings = data.data.map(normalizeBooking);
+      renderList();
+      checkNotifications(allBookings);
+    } else {
+      throw new Error(data.error || 'Failed');
+    }
+  } catch(err) {
+    // fallback to localStorage
+    const shared = getSharedBookings();
+    if (shared.length) {
+      allBookings = shared.map(normalizeBooking);
+      renderList();
+      checkNotifications(allBookings);
+    } else {
+      listEl.innerHTML = `
+        <div class="res-state">
+          <h3 class="res-state-title">No reservations yet</h3>
+          <p>Book a hotel to see it here.</p>
+          <a class="btn-ghost" href="index.html" style="display:inline-block;margin-top:22px;text-decoration:none">Discover hotels</a>
+        </div>`;
+    }
   }
 }
 
@@ -332,20 +340,18 @@ cancelConfirm?.addEventListener('click', async () => {
   cancelConfirm.disabled = true;
   cancelConfirm.textContent = 'Cancelling…';
   try {
-    // 1. Update shared bookings
-    let shared = getSharedBookings();
-    const idx = shared.findIndex(b => b.id === pendingCancelId);
-    if (idx !== -1) {
-      // Instead of deleting, we could mark as cancelled, but user expects removal from list.
-      // For shared bookings, we delete it so it disappears from all accounts.
-      shared.splice(idx, 1);
-      saveSharedBookings(shared);
-    }
-    // 2. Update current allBookings array
+    // Cancel via backend API
+    const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Cancel failed');
+
+    // Update local state
     const localIdx = allBookings.findIndex(b => b.id === pendingCancelId);
-    if (localIdx !== -1) allBookings.splice(localIdx, 1);
-    // 3. Update cache
-    saveCache(allBookings);
+    if (localIdx !== -1) allBookings[localIdx].status = 'cancelled';
+
     closeCancelModal();
     renderList();
     showToast('Reservation cancelled.', 'success');
