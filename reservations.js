@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* Direct cancel button (no confirmation modal) */
+/* Cancel button appears for every non-cancelled booking */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -184,9 +184,8 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Cancel function (direct, no confirm) ── */
+/* ── Cancel function (direct, no modal) ── */
 async function cancelBooking(bookingId, buttonElement) {
-  // Disable button to prevent double click
   buttonElement.disabled = true;
   buttonElement.textContent = 'Cancelling...';
   try {
@@ -194,7 +193,7 @@ async function cancelBooking(bookingId, buttonElement) {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: '' })
+      body: JSON.stringify({ reason: '' }) // optional reason field remains
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Cancel failed');
@@ -202,7 +201,7 @@ async function cancelBooking(bookingId, buttonElement) {
     // Update local state
     const idx = allBookings.findIndex(b => b.id === bookingId);
     if (idx !== -1) allBookings[idx].status = 'cancelled';
-    renderList(); // re-render to update UI
+    renderList(); // re-render to remove button and update status
     showToast('Reservation cancelled.', 'success');
   } catch (err) {
     showToast(err.message || 'Could not cancel', 'error');
@@ -211,7 +210,7 @@ async function cancelBooking(bookingId, buttonElement) {
   }
 }
 
-/* ── Render list with direct cancel buttons ── */
+/* ── Render list with cancel button for EVERY non-cancelled booking ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -225,7 +224,7 @@ function renderList() {
   const term = searchTerm.toLowerCase();
   const filtered = allBookings.filter(b => {
     const s = statusOf(b);
-    if (activeFilter==='upcoming'  && !(s==='upcoming'||s==='current')) return false;
+    if (activeFilter==='upcoming'  && s!=='upcoming') return false;
     if (activeFilter==='past'      && s!=='past')      return false;
     if (activeFilter==='cancelled' && s!=='cancelled') return false;
     if (!term) return true;
@@ -236,9 +235,11 @@ function renderList() {
     return;
   }
   listEl.innerHTML = filtered.map(b => {
-    const s         = statusOf(b);
-    const showStatus= b.status==='cancelled' ? 'cancelled' : s;
-    const canCancel = s==='upcoming' && b.status!=='cancelled';
+    const s = statusOf(b);
+    const showStatus = s;
+    const isCancelled = b.status === 'cancelled';
+    // Show cancel button for every booking that is NOT cancelled
+    const showCancelBtn = !isCancelled;
     const cover     = HOTEL_COVERS[b.hotelName];
     const roomImg   = ROOM_COVERS[b.roomType] || ROOM_COVERS['Deluxe Room'];
     const imgStyle  = cover
@@ -274,17 +275,18 @@ function renderList() {
             ${b.paymentLast4?`<div class="res-total-label" style="margin-top:4px;font-size:10px">•••• ${escapeHtml(b.paymentLast4)}</div>`:''}
           </div>
           <div class="res-card-actions">
-            ${canCancel
+            ${showCancelBtn
               ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>`
-              : `<span style="opacity:.45;font-size:11px;letter-spacing:1px">${b.status==='cancelled'?'Cancelled':s==='past'?'Complete':'Active'}</span>`}
+              : `<span style="opacity:.45;font-size:11px;letter-spacing:1px">Cancelled</span>`}
           </div>
         </div>
       </article>`;
   }).join('');
 
-  // Attach event listeners to cancel buttons (direct cancel, no modal)
+  // Attach event listeners to cancel buttons
   document.querySelectorAll('.cancel-btn').forEach(btn => {
     const id = parseInt(btn.dataset.id);
+    if (isNaN(id)) return;
     btn.removeEventListener('click', (e) => cancelBooking(id, btn));
     btn.addEventListener('click', (e) => cancelBooking(id, btn));
   });
