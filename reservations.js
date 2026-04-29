@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* بعد الإلغاء، يتم إعادة تحميل القائمة من الخادم */
+/* FINAL: بعد الإلغاء الناجح، يتم إعادة تحميل القائمة من الخادم */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -52,7 +52,7 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
   window.location.href = 'auth.html';
 });
 
-/* ── Images (كاملة) ── */
+/* ── Hotel Images (full list) ── */
 const HOTEL_COVERS = {
   'Le Grand Aurum Paris': 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
   'Aurum Palace London': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
@@ -89,6 +89,12 @@ function fmtDate(iso) {
 }
 function escapeHtml(s) { return String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function normalizeBooking(b) {
+  let status = b.status || 'confirmed';
+  // تحويل الحالة إلى نص مفهوم
+  if (status === 'cancelled') status = 'cancelled';
+  else if (new Date(b.check_out) < new Date()) status = 'past';
+  else if (new Date(b.check_in) <= new Date() && new Date(b.check_out) >= new Date()) status = 'current';
+  else status = 'upcoming';
   return {
     id: b.id,
     reference: b.reference || ('AUR-' + String(b.id).padStart(6, '0')),
@@ -100,14 +106,15 @@ function normalizeBooking(b) {
     checkOut: b.check_out || b.checkOut,
     nights: b.nights || 1,
     total: b.total || 0,
-    status: b.status || 'confirmed',
+    status: status,
     paymentLast4: b.payment_last4 || b.paymentLast4 || '',
     createdAt: b.created_at || b.createdAt || new Date().toISOString(),
   };
 }
 
-/* ── Cancel function: reload full list after success ── */
+/* ── Cancel function: إظهار تأكيد، ثم إرسال طلب، ثم إعادة تحميل القائمة ── */
 async function cancelBooking(bookingId, button) {
+  if (!confirm('Are you sure you want to cancel this reservation?')) return;
   button.disabled = true;
   button.textContent = 'Cancelling...';
   try {
@@ -121,17 +128,18 @@ async function cancelBooking(bookingId, button) {
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
-    showToast('✓ Cancelled. Refreshing...', 'success');
-    await load(); // جلب القائمة من الخادم مرة أخرى
+    showToast('Reservation cancelled successfully.', 'success');
+    // إعادة تحميل القائمة بالكامل من الخادم
+    await load();
   } catch (err) {
     console.error('Cancel error:', err);
-    showToast(`✗ ${err.message}`, 'error');
+    showToast(`Error: ${err.message}`, 'error');
     button.disabled = false;
     button.textContent = 'Cancel';
   }
 }
 
-/* ── Render list (تظهر أزرار الإلغاء فقط للحجوزات غير الملغاة) ── */
+/* ── Render list (تظهر أزرار الإلغاء فقط للحجوزات التي حالتها ليست cancelled) ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
@@ -174,14 +182,21 @@ function renderList() {
         <div class="res-card-side">
           <div class="res-total">${fmtMoney(b.total)}</div>
           ${b.paymentLast4 ? `<div style="font-size:10px">•••• ${b.paymentLast4}</div>` : ''}
-          ${!isCancelled ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>` : '<span>Cancelled</span>'}
+          ${!isCancelled ? `<button class="btn btn-danger cancel-btn" data-id="${b.id}">Cancel</button>` : '<span class="cancelled-badge">Cancelled</span>'}
         </div>
       </article>`;
   }).join('');
 
+  // إضافة مستمعي الأحداث لأزرار الإلغاء
   document.querySelectorAll('.cancel-btn').forEach(btn => {
     const id = parseInt(btn.dataset.id);
-    btn.addEventListener('click', () => cancelBooking(id, btn));
+    if (isNaN(id)) return;
+    // منع تكرار المستمعين
+    btn.removeEventListener('click', () => {});
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      cancelBooking(id, btn);
+    });
   });
 }
 
@@ -191,18 +206,19 @@ async function load() {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
     return;
   }
-  listEl.innerHTML = '<div class="res-state"><p>Loading reservations...</p></div>';
+  listEl.innerHTML = '<div class="res-state"><div class="res-spinner"></div><p>Loading reservations...</p></div>';
   try {
     const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
       allBookings = data.data.map(normalizeBooking);
     } else {
-      throw new Error('No data');
+      throw new Error(data.error || 'Invalid response');
     }
   } catch (err) {
-    console.error(err);
+    console.error('Load error:', err);
     allBookings = [];
+    showToast('Failed to load reservations. Check connection.', 'error');
   }
   renderList();
 }
