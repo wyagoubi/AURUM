@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* MODIFIED: Uses shared bookings (aurum-shared-bookings) so all accounts see the same reservations. */
+/* MODIFIED: Added cancel reason (optional) */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -90,7 +90,6 @@ function getSharedBookings() {
 }
 function saveSharedBookings(bookings) {
   localStorage.setItem(SHARED_KEY, JSON.stringify(bookings));
-  // also update cache for immediate UI
   saveCache(bookings);
 }
 
@@ -107,9 +106,10 @@ const cancelDesc    = document.getElementById('cancelDesc');
 const cancelConfirm = document.getElementById('cancelConfirm');
 const cancelKeep    = document.getElementById('cancelKeep');
 const cancelClose   = document.getElementById('cancelClose');
+const cancelReasonInput = document.getElementById('cancelReason'); // new
 let pendingCancelId = null;
 
-/* ── Helpers (unchanged) ── */
+/* ── Helpers ── */
 function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0}); }
 function fmtDate(iso) {
   if (!iso) return '—';
@@ -192,7 +192,7 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Render (unchanged layout) ── */
+/* ── Render ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -323,6 +323,7 @@ listEl?.addEventListener('click', e => {
   if (cancelDesc) cancelDesc.textContent = b
     ? `Cancel your stay at ${b.hotelName} (${fmtDate(b.checkIn)} – ${fmtDate(b.checkOut)})?`
     : 'Cancel this reservation?';
+  if (cancelReasonInput) cancelReasonInput.value = '';
   cancelModal?.classList.remove('hidden');
 });
 
@@ -337,18 +338,19 @@ cancelModal?.addEventListener('click', e => { if (e.target === cancelModal) clos
 
 cancelConfirm?.addEventListener('click', async () => {
   if (!pendingCancelId) return;
+  const reason = cancelReasonInput ? cancelReasonInput.value.trim() : '';
   cancelConfirm.disabled = true;
   cancelConfirm.textContent = 'Cancelling…';
   try {
-    // Cancel via backend API
     const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Cancel failed');
 
-    // Update local state
     const localIdx = allBookings.findIndex(b => b.id === pendingCancelId);
     if (localIdx !== -1) allBookings[localIdx].status = 'cancelled';
 
