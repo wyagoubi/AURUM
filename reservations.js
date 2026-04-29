@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* MODIFIED: Simple cancel modal with optional reason */
+/* MODIFIED: Inline cancel reason input inside each card */
 
 const API_BASE   = 'https://aurum-m4v8.onrender.com/api';
 const CACHE_KEY  = 'aurum-bookings-cache';
@@ -102,16 +102,6 @@ const listEl        = document.getElementById('resList');
 const searchEl      = document.getElementById('resSearch');
 const filtersEl     = document.getElementById('resFilters');
 
-// New modal elements
-const cancelModal       = document.getElementById('cancelModal');
-const cancelModalDesc   = document.getElementById('cancelModalDesc');
-const cancelReasonInput = document.getElementById('cancelReason');
-const cancelModalClose  = document.getElementById('cancelModalClose');
-const cancelModalCloseBtn = document.getElementById('cancelModalCloseBtn');
-const cancelConfirmBtn  = document.getElementById('cancelConfirmBtn');
-
-let pendingCancelId = null;
-
 /* ── Helpers ── */
 function fmtMoney(n) { return '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0}); }
 function fmtDate(iso) {
@@ -195,7 +185,7 @@ function checkNotifications(bookings) {
   }
 }
 
-/* ── Render list ── */
+/* ── Render list with inline cancel UI ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -228,8 +218,9 @@ function renderList() {
     const imgStyle  = cover
       ? `background:url('${cover}') center/cover no-repeat`
       : `background:linear-gradient(135deg,#1a1208,#2a1f0a)`;
+    // Add a hidden div for cancel reason UI (initially hidden)
     return `
-      <article class="res-card" data-id="${b.id}">
+      <article class="res-card" data-id="${b.id}" data-cancel-active="false">
         <div class="res-card-art" style="${imgStyle}">
           <div class="res-card-art-overlay"></div>
           <div class="res-card-art-ref">${escapeHtml(b.reference)}</div>
@@ -259,12 +250,100 @@ function renderList() {
           </div>
           <div class="res-card-actions">
             ${canCancel
-              ? `<button class="btn btn-danger" data-cancel="${b.id}">Cancel</button>`
+              ? `<button class="btn btn-danger cancel-trigger" data-id="${b.id}">Cancel</button>`
               : `<span style="opacity:.45;font-size:11px;letter-spacing:1px">${b.status==='cancelled'?'Cancelled':s==='past'?'Complete':'Active'}</span>`}
+            <div class="cancel-inline hidden" data-id="${b.id}">
+              <textarea class="cancel-reason" rows="2" placeholder="Reason (optional)"></textarea>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn-sm btn-ghost cancel-abort">Abort</button>
+                <button class="btn-sm btn-danger cancel-submit">Confirm</button>
+              </div>
+            </div>
           </div>
         </div>
       </article>`;
   }).join('');
+
+  // attach event listeners to all cancel buttons
+  document.querySelectorAll('.cancel-trigger').forEach(btn => {
+    btn.removeEventListener('click', handleCancelTrigger);
+    btn.addEventListener('click', handleCancelTrigger);
+  });
+  document.querySelectorAll('.cancel-abort').forEach(btn => {
+    btn.removeEventListener('click', handleCancelAbort);
+    btn.addEventListener('click', handleCancelAbort);
+  });
+  document.querySelectorAll('.cancel-submit').forEach(btn => {
+    btn.removeEventListener('click', handleCancelSubmit);
+    btn.addEventListener('click', handleCancelSubmit);
+  });
+}
+
+function handleCancelTrigger(e) {
+  const btn = e.currentTarget;
+  const card = btn.closest('.res-card');
+  if (!card) return;
+  const cancelInline = card.querySelector('.cancel-inline');
+  if (cancelInline) {
+    // hide the normal cancel button, show inline UI
+    btn.classList.add('hidden');
+    cancelInline.classList.remove('hidden');
+    // focus on textarea
+    const textarea = cancelInline.querySelector('.cancel-reason');
+    if (textarea) textarea.focus();
+  }
+}
+
+function handleCancelAbort(e) {
+  const btn = e.currentTarget;
+  const card = btn.closest('.res-card');
+  if (!card) return;
+  const cancelInline = card.querySelector('.cancel-inline');
+  const cancelTrigger = card.querySelector('.cancel-trigger');
+  if (cancelInline) cancelInline.classList.add('hidden');
+  if (cancelTrigger) cancelTrigger.classList.remove('hidden');
+}
+
+async function handleCancelSubmit(e) {
+  const btn = e.currentTarget;
+  const card = btn.closest('.res-card');
+  if (!card) return;
+  const cancelInline = card.querySelector('.cancel-inline');
+  const textarea = cancelInline.querySelector('.cancel-reason');
+  const reason = textarea ? textarea.value.trim() : '';
+  const bookingId = parseInt(card.dataset.id);
+  if (!bookingId) return;
+
+  // disable buttons during request
+  const submitBtn = btn;
+  const abortBtn = cancelInline.querySelector('.cancel-abort');
+  submitBtn.disabled = true;
+  if (abortBtn) abortBtn.disabled = true;
+  submitBtn.textContent = 'Processing...';
+
+  try {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Cancel failed');
+
+    // update local state
+    const idx = allBookings.findIndex(b => b.id === bookingId);
+    if (idx !== -1) allBookings[idx].status = 'cancelled';
+    // re-render list to reflect new status
+    renderList();
+    showToast('Reservation cancelled.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Could not cancel', 'error');
+    // re-enable buttons and hide inline? keep inline visible to retry
+    submitBtn.disabled = false;
+    if (abortBtn) abortBtn.disabled = false;
+    submitBtn.textContent = 'Confirm';
+  }
 }
 
 /* ── Load bookings ── */
@@ -315,59 +394,6 @@ filtersEl?.addEventListener('click', e => {
   btn.classList.add('active');
   activeFilter = btn.dataset.filter;
   renderList();
-});
-
-// Cancel button click on each card
-listEl?.addEventListener('click', e => {
-  const btn = e.target.closest('[data-cancel]');
-  if (!btn) return;
-  const id = Number(btn.dataset.cancel);
-  const booking = allBookings.find(b => b.id === id);
-  if (!booking) return;
-  pendingCancelId = id;
-  if (cancelModalDesc) {
-    cancelModalDesc.textContent = `Cancel stay at ${booking.hotelName} (${fmtDate(booking.checkIn)} – ${fmtDate(booking.checkOut)})? Reason (optional):`;
-  }
-  if (cancelReasonInput) cancelReasonInput.value = '';
-  cancelModal?.classList.remove('hidden');
-});
-
-// Close modal functions
-function closeCancelModal() {
-  cancelModal?.classList.add('hidden');
-  pendingCancelId = null;
-}
-cancelModalClose?.addEventListener('click', closeCancelModal);
-cancelModalCloseBtn?.addEventListener('click', closeCancelModal);
-cancelModal?.addEventListener('click', e => { if (e.target === cancelModal) closeCancelModal(); });
-
-// Confirm cancellation
-cancelConfirmBtn?.addEventListener('click', async () => {
-  if (!pendingCancelId) return;
-  const reason = cancelReasonInput ? cancelReasonInput.value.trim() : '';
-  cancelConfirmBtn.disabled = true;
-  cancelConfirmBtn.textContent = 'Cancelling...';
-  try {
-    const res = await fetch(`${API_BASE}/bookings/${pendingCancelId}/cancel`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Cancel failed');
-    // Update local state
-    const idx = allBookings.findIndex(b => b.id === pendingCancelId);
-    if (idx !== -1) allBookings[idx].status = 'cancelled';
-    closeCancelModal();
-    renderList();
-    showToast('Reservation cancelled.', 'success');
-  } catch (err) {
-    showToast(err.message || 'Could not cancel', 'error');
-  } finally {
-    cancelConfirmBtn.disabled = false;
-    cancelConfirmBtn.textContent = 'Confirm cancellation';
-  }
 });
 
 load();
