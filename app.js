@@ -82,10 +82,16 @@ function showPage(id) {
   navLinks.forEach(l => { if (l.dataset.page === id) l.classList.add('active'); });
   document.querySelector('.nav-links')?.classList.remove('mobile-open');
 
-  // تحديث عنوان URL بدون إعادة تحميل الصفحة
+  // تحديث عنوان URL (اختياري)
   const newUrl = new URL(window.location.href);
   newUrl.searchParams.set('page', id);
   window.history.pushState({}, '', newUrl);
+
+  // ✅ إضافة هذا الجزء: مسح حقل الوجهة عند العودة إلى الصفحة الرئيسية
+  if (id === 'home') {
+    const locationInput = document.getElementById('s-location');
+    if (locationInput) locationInput.value = '';
+  }
 }
 
 navLinks.forEach(link => {
