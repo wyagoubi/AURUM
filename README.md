@@ -6,6 +6,9 @@ AURUM is a full-stack luxury hotel booking platform designed as a university sof
 
 Its architecture consists of a client-side web interface, a RESTful application layer, and a PostgreSQL database structured through SQL schema definitions and automated initialization scripts (initDb.js), ensuring scalability, consistency, and deployment automation.
 
+
+One challenge we faced was deploying the backend server using Render’s free plan. On the free plan, Render automatically puts the server to sleep after 15 minutes of inactivity. When a new request is made, the server needs around 30–60 seconds to wake up again. This sometimes caused delays or temporary messages such as “Authentication required,” especially during the first request.
+
 ## 🔗 Live Demo
 
 **[https://wyagoubi.github.io/AURUM/](https://wyagoubi.github.io/AURUM/)**
