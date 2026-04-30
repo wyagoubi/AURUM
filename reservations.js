@@ -36,20 +36,22 @@ function showToast(msg, type = 'success') {
 }
 
 /* ── Auth ── */
-const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-const navUserLogged = document.getElementById('navUserLogged');
-const navAvatar     = document.getElementById('navAvatar');
-const navUsername   = document.getElementById('navUsername');
-const navUserGuest  = document.getElementById('navUser');
+function initAuth() {
+  const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+  const navUserLogged = document.getElementById('navUserLogged');
+  const navAvatar = document.getElementById('navAvatar');
+  const navUsername = document.getElementById('navUsername');
+  const navUserGuest = document.getElementById('navUser');
 
-if (user && user.email) {
-  navUserGuest?.classList.add('hidden');
-  navUserLogged?.classList.remove('hidden');
-  if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
-  if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
-} else {
-  navUserGuest?.classList.remove('hidden');
-  navUserLogged?.classList.add('hidden');
+  if (user && user.email) {
+    navUserGuest?.classList.add('hidden');
+    navUserLogged?.classList.remove('hidden');
+    if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
+    if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
+  } else {
+    navUserGuest?.classList.remove('hidden');
+    navUserLogged?.classList.add('hidden');
+  }
 }
 
 document.getElementById('navSignout')?.addEventListener('click', () => {
@@ -57,6 +59,13 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
   localStorage.removeItem('aurum-token');
   window.location.href = 'auth.html';
 });
+
+// تنفيذ المصادقة بعد تحميل DOM بالكامل
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAuth);
+} else {
+  initAuth();
+}
 
 /* ── Images ── */
 const HOTEL_COVERS = {
