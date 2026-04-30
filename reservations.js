@@ -1,4 +1,5 @@
 /* AURUM — reservations.js */
+/* FIXED: Cancel removes booking from list only on successful server response */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -40,13 +41,17 @@ const navUserLogged = document.getElementById('navUserLogged');
 const navAvatar     = document.getElementById('navAvatar');
 const navUsername   = document.getElementById('navUsername');
 const navUserGuest  = document.getElementById('navUser');
-if (user) {
+
+if (user && user.email) {
+  navUserGuest?.classList.add('hidden');
   navUserLogged?.classList.remove('hidden');
-  if (navAvatar)   navAvatar.textContent   = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
+  if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
   if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
 } else {
   navUserGuest?.classList.remove('hidden');
+  navUserLogged?.classList.add('hidden');
 }
+
 document.getElementById('navSignout')?.addEventListener('click', () => {
   localStorage.removeItem('aurum-user');
   localStorage.removeItem('aurum-token');
@@ -122,11 +127,13 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel — يحذف الحجز من القائمة فوراً بعد النجاح ── */
+/* ── Cancel — يحذف الحجز فقط بعد استجابة ناجحة من الخادم ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
 
-  button.disabled    = true;
+  // حفظ النص الأصلي للزر لاستعادته في حالة الفشل
+  const originalText = button.textContent;
+  button.disabled = true;
   button.textContent = 'Cancelling...';
 
   try {
@@ -134,18 +141,23 @@ async function cancelBooking(bookingId, button) {
       method:      'POST',
       credentials: 'include',
       headers:     { 'Content-Type': 'application/json' },
-      body:        JSON.stringify({ reason: '', userId: user?.id })
+      body:        JSON.stringify({ reason: '' })
     });
 
-    let data = {};
-    try { data = await res.json(); } catch (_) {}
-    console.log('[cancel] HTTP:', res.status, '| data:', JSON.stringify(data));
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = { success: false, error: 'Invalid JSON response' };
+    }
+
+    console.log('[cancel] Response:', res.status, data);
 
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
 
-    /* ✅ احذف الحجز من المصفوفة مباشرة بدون load() */
+    // ✅ عند النجاح: إزالة الحجز من المصفوفة وإعادة التصيير
     allBookings = allBookings.filter(b => b.id !== bookingId);
     renderList();
     showToast('Reservation cancelled successfully.', 'success');
@@ -153,9 +165,9 @@ async function cancelBooking(bookingId, button) {
   } catch (err) {
     console.error('[cancel] error:', err.message);
     showToast(`Error: ${err.message}`, 'error');
-    /* ✅ أعد الزر لحالته الأصلية عند الفشل */
-    button.disabled    = false;
-    button.textContent = 'Cancel';
+    // إعادة الزر إلى حالته الأصلية
+    button.disabled = false;
+    button.textContent = originalText;
   }
 }
 
@@ -166,7 +178,7 @@ function renderList() {
       <div class="res-state">
         <h3>No reservations yet</h3>
         <p>Book a hotel to see it here.</p>
-        <a class="btn-ghost" href="index.html">Discover hotels</a>
+        <a class="btn-ghost" href="index.html?page=home">Discover hotels</a>
       </div>`;
     return;
   }
@@ -224,17 +236,11 @@ async function load() {
   }
   listEl.innerHTML = '<div class="res-state"><div class="res-spinner"></div><p>Loading reservations...</p></div>';
   try {
-    const res  = await fetch(`${API_BASE}/bookings?userId=${user.id}`, {
-      credentials: 'include'
-    });
+    const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
-      /* ✅ اعرض فقط الحجوزات غير الملغاة في القائمة الرئيسية */
-      allBookings = data.data
-        .map(normalizeBooking)
-        allBookings = data.data
-  .map(normalizeBooking)
-  .filter(b => b.status !== 'cancelled');
+      // تحميل جميع الحجوزات (الملغاة وغير الملغاة)
+      allBookings = data.data.map(normalizeBooking);
     } else {
       throw new Error(data.error || 'Invalid response');
     }
@@ -254,32 +260,10 @@ filtersEl?.addEventListener('click', e => {
   filtersEl.querySelectorAll('.res-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   activeFilter = btn.dataset.filter;
-
-  /* عند اختيار فلتر Cancelled، أعد تحميل الكل من الخادم */
-  if (activeFilter === 'cancelled') {
-    loadAll();
-  } else {
-    renderList();
-  }
+  renderList();
 });
 
-/* ── loadAll: يجلب كل الحجوزات بما فيها الملغاة (للفلتر فقط) ── */
-async function loadAll() {
-  try {
-    const res  = await fetch(`${API_BASE}/bookings?userId=${user.id}`, {
-      credentials: 'include'
-    });
-    const data = await res.json();
-    if (data.success && Array.isArray(data.data)) {
-      allBookings = data.data.map(normalizeBooking);
-    }
-  } catch (err) {
-    console.error('[loadAll] error:', err.message);
-  }
-  renderList();
-}
-
-/* ── Event Delegation ── */
+/* ── Event Delegation for Cancel ── */
 listEl.addEventListener('click', e => {
   const btn = e.target.closest('.cancel-btn');
   if (!btn || btn.disabled) return;
