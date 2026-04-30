@@ -389,5 +389,21 @@ body.light-mode .cancelled-badge {
   .res-detail-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .res-card-body { padding: 22px 22px 4px; }
   .res-toolbar { flex-direction: column; align-items: stretch; }
+
+
+
+   .cancelled-badge {
+  display: inline-block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c46c6c;
+  border: 1px solid rgba(196, 108, 108, 0.45);
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(196, 108, 108, 0.08);
+  white-space: nowrap;
+}
   .res-filters { justify-content: flex-start; }
 }
