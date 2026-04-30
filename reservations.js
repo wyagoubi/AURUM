@@ -1,5 +1,4 @@
 /* AURUM — reservations.js */
-/* FINAL FIX: Event Delegation + Auth Headers + normalizeBooking */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -35,14 +34,6 @@ function showToast(msg, type = 'success') {
   setTimeout(() => { t.classList.add('toast-out'); setTimeout(() => t.remove(), 350); }, 3500);
 }
 
-/* ── Auth headers helper — يجرب JWT أولاً ثم Session ── */
-function getAuthHeaders(extra = {}) {
-  const token = localStorage.getItem('aurum-token');
-  const headers = { 'Content-Type': 'application/json', ...extra };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
-}
-
 /* ── Auth ── */
 const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
 const navUserLogged = document.getElementById('navUserLogged');
@@ -62,7 +53,7 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
   window.location.href = 'auth.html';
 });
 
-/* ── Hotel & Room Images ── */
+/* ── Images ── */
 const HOTEL_COVERS = {
   'Le Grand Aurum Paris':      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
   'Aurum Palace London':       'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
@@ -84,7 +75,7 @@ const ROOM_COVERS = {
   'Presidential Suite': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=300&q=80',
 };
 
-let allBookings = [];
+let allBookings  = [];
 let activeFilter = 'all';
 let searchTerm   = '';
 const listEl    = document.getElementById('resList');
@@ -101,27 +92,24 @@ function escapeHtml(s) {
   return String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-/* ── normalizeBooking: يحترم status من الخادم أولاً ── */
 function normalizeBooking(b) {
   const serverStatus = (b.status || '').toLowerCase();
   let status;
-
   if (serverStatus === 'cancelled') {
     status = 'cancelled';
   } else {
     const now      = new Date(); now.setUTCHours(0, 0, 0, 0);
     const checkIn  = new Date((b.check_in  || b.checkIn)  + 'T00:00:00Z');
     const checkOut = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
-    if      (checkOut < now)                        status = 'past';
-    else if (checkIn <= now && checkOut >= now)      status = 'current';
-    else                                             status = 'upcoming';
+    if      (checkOut < now)                   status = 'past';
+    else if (checkIn <= now && checkOut >= now) status = 'current';
+    else                                        status = 'upcoming';
   }
-
   return {
     id:           b.id,
     reference:    b.reference || ('AUR-' + String(b.id).padStart(6, '0')),
-    hotelName:    b.hotel_name   || b.hotelName   || 'AURUM Stay',
-    roomType:     b.room_type    || b.roomType     || 'Deluxe Room',
+    hotelName:    b.hotel_name || b.hotelName || 'AURUM Stay',
+    roomType:     b.room_type  || b.roomType  || 'Deluxe Room',
     rooms:        b.rooms  || 1,
     guests:       b.guests || 1,
     checkIn:      b.check_in  || b.checkIn,
@@ -134,7 +122,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel ── */
+/* ── Cancel — يحذف الحجز من القائمة فوراً بعد النجاح ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
 
@@ -145,26 +133,27 @@ async function cancelBooking(bookingId, button) {
     const res = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
       method:      'POST',
       credentials: 'include',
-      headers:     getAuthHeaders(),
-      body:        JSON.stringify({ reason: '' })
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ reason: '', userId: user?.id })
     });
 
     let data = {};
     try { data = await res.json(); } catch (_) {}
-
-    // سجّل الرد في الكونسول لمعرفة المشكلة
     console.log('[cancel] HTTP:', res.status, '| data:', JSON.stringify(data));
 
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
 
+    /* ✅ احذف الحجز من المصفوفة مباشرة بدون load() */
+    allBookings = allBookings.filter(b => b.id !== bookingId);
+    renderList();
     showToast('Reservation cancelled successfully.', 'success');
-    await load();
 
   } catch (err) {
     console.error('[cancel] error:', err.message);
     showToast(`Error: ${err.message}`, 'error');
+    /* ✅ أعد الزر لحالته الأصلية عند الفشل */
     button.disabled    = false;
     button.textContent = 'Cancel';
   }
@@ -173,7 +162,12 @@ async function cancelBooking(bookingId, button) {
 /* ── Render ── */
 function renderList() {
   if (!allBookings.length) {
-    listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
+    listEl.innerHTML = `
+      <div class="res-state">
+        <h3>No reservations yet</h3>
+        <p>Book a hotel to see it here.</p>
+        <a class="btn-ghost" href="index.html">Discover hotels</a>
+      </div>`;
     return;
   }
   const term = searchTerm.toLowerCase();
@@ -230,14 +224,15 @@ async function load() {
   }
   listEl.innerHTML = '<div class="res-state"><div class="res-spinner"></div><p>Loading reservations...</p></div>';
   try {
-    const res  = await fetch(`${API_BASE}/bookings`, {
-      credentials: 'include',
-      headers:     getAuthHeaders()
+    const res  = await fetch(`${API_BASE}/bookings?userId=${user.id}`, {
+      credentials: 'include'
     });
     const data = await res.json();
-    console.log('[load] response:', JSON.stringify(data));
     if (data.success && Array.isArray(data.data)) {
-      allBookings = data.data.map(normalizeBooking);
+      /* ✅ اعرض فقط الحجوزات غير الملغاة في القائمة الرئيسية */
+      allBookings = data.data
+        .map(normalizeBooking)
+        .filter(b => b.status !== 'cancelled');
     } else {
       throw new Error(data.error || 'Invalid response');
     }
@@ -257,10 +252,32 @@ filtersEl?.addEventListener('click', e => {
   filtersEl.querySelectorAll('.res-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   activeFilter = btn.dataset.filter;
-  renderList();
+
+  /* عند اختيار فلتر Cancelled، أعد تحميل الكل من الخادم */
+  if (activeFilter === 'cancelled') {
+    loadAll();
+  } else {
+    renderList();
+  }
 });
 
-/* ── Event Delegation — مستمع واحد دائم يعمل مع كل الأزرار حتى بعد إعادة بناء HTML ── */
+/* ── loadAll: يجلب كل الحجوزات بما فيها الملغاة (للفلتر فقط) ── */
+async function loadAll() {
+  try {
+    const res  = await fetch(`${API_BASE}/bookings?userId=${user.id}`, {
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      allBookings = data.data.map(normalizeBooking);
+    }
+  } catch (err) {
+    console.error('[loadAll] error:', err.message);
+  }
+  renderList();
+}
+
+/* ── Event Delegation ── */
 listEl.addEventListener('click', e => {
   const btn = e.target.closest('.cancel-btn');
   if (!btn || btn.disabled) return;
