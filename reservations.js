@@ -232,7 +232,9 @@ async function load() {
       /* ✅ اعرض فقط الحجوزات غير الملغاة في القائمة الرئيسية */
       allBookings = data.data
         .map(normalizeBooking)
-        .filter(b => b.status !== 'cancelled');
+        allBookings = data.data
+  .map(normalizeBooking)
+  .filter(b => b.status !== 'cancelled');
     } else {
       throw new Error(data.error || 'Invalid response');
     }
