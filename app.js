@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    AURUM — STABLE LOCAL VERSION (NO API FAILURE)
    All hotels, images, galleries built-in.
+   FIXED: page persistence via URL parameter, executeAiAction added
 ═══════════════════════════════════════════════ */
 
 // ================== API CONFIG (LOCAL ONLY) ==================
@@ -81,6 +82,11 @@ function showPage(id) {
   }
   navLinks.forEach(l => { if (l.dataset.page === id) l.classList.add('active'); });
   document.querySelector('.nav-links')?.classList.remove('mobile-open');
+  
+  // تحديث عنوان URL بدون إعادة تحميل الصفحة (للحفاظ على الحالة)
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.set('page', id);
+  window.history.pushState({}, '', newUrl);
 }
 
 navLinks.forEach(link => {
@@ -442,7 +448,7 @@ function getHotelBookingStatus(hotelId) {
     const daysLeft = Math.round((checkIn - today)/(1000*3600*24));
     return { text: `Booked · starts in ${daysLeft} day${daysLeft!==1?'s':''}`, class: 'upcoming' };
   }
-  return null;
+  return { text: 'Completed', class: 'completed' };
 }
 
 async function updateAllBookingBadges() {
@@ -648,7 +654,7 @@ function executeAiAction(action) {
     case 'SEARCH':
       const city = action.params?.city;
       if(city) { document.getElementById('s-location').value = city; document.getElementById('searchBtn').click(); }
-      else showToast('City?','error');
+      else showToast('Please specify a city.','error');
       break;
     case 'BOOK':
       const hotelName = action.params?.hotelName;
@@ -656,11 +662,11 @@ function executeAiAction(action) {
         const hotel = hotelDatabase.find(h => h.name.toLowerCase().includes(hotelName.toLowerCase()));
         if(hotel) openBookingModal(hotel);
         else showToast(`Hotel "${hotelName}" not found`,'error');
-      } else showToast('Hotel name?','error');
+      } else showToast('Please specify a hotel name.','error');
       break;
     case 'GO_RESERVATIONS': window.location.href='reservations.html'; break;
     case 'GO_HOME': showPage('home'); break;
-    default: break;
+    default: console.warn('Unknown action', action);
   }
 }
 async function sendAI() {
@@ -683,7 +689,7 @@ async function sendAI() {
       if(window._aiHistory.length>32) window._aiHistory = window._aiHistory.slice(-32);
       saveChatHistory();
       if(data.data.action) executeAiAction(data.data.action);
-    } else typing.querySelector('.ai-msg-bubble').innerHTML = 'AI unavailable.';
+    } else typing.querySelector('.ai-msg-bubble').innerHTML = 'AI service unavailable.';
   } catch(err) {
     typing.classList.remove('ai-typing');
     typing.querySelector('.ai-msg-bubble').innerHTML = 'Connection error.';
@@ -810,6 +816,18 @@ window.addEventListener('DOMContentLoaded', () => {
     payCvc.addEventListener('input', function() {
       this.value = this.value.replace(/\D/g, '').substring(0, 4);
     });
+  }
+  
+  // NEW: Handle page parameter from URL (for returning from reservations.html etc.)
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageParam = urlParams.get('page');
+  if (pageParam === 'home') {
+    showPage('home');
+  } else if (pageParam === 'results') {
+    showPage('results');
+  } else {
+    // Default to home
+    showPage('home');
   }
 });
 
