@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* FINAL FIX: Reload list after cancel to ensure sync with database */
+/* Default filter: Upcoming (shows only upcoming and current stays) */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -81,7 +81,7 @@ const ROOM_COVERS = {
 };
 
 let allBookings  = [];
-let activeFilter = 'all';
+let activeFilter = 'upcoming';   // الفلتر الافتراضي هو "Upcoming"
 let searchTerm   = '';
 const listEl    = document.getElementById('resList');
 const searchEl  = document.getElementById('resSearch');
@@ -127,7 +127,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel — إعادة تحميل القائمة بعد النجاح لضمان المزامنة ── */
+/* ── Cancel booking ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
 
@@ -143,14 +143,18 @@ async function cancelBooking(bookingId, button) {
       body:        JSON.stringify({ reason: '' })
     });
     const data = await res.json();
-    console.log('[cancel] response:', res.status, data);
 
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
 
-    showToast('Reservation cancelled. Refreshing list...', 'success');
-    await load(); // إعادة تحميل القائمة من الخادم
+    // تحديث الحالة محلياً
+    const idx = allBookings.findIndex(b => b.id === bookingId);
+    if (idx !== -1) {
+      allBookings[idx].status = 'cancelled';
+    }
+    renderList();
+    showToast('Reservation cancelled successfully.', 'success');
 
   } catch (err) {
     console.error('[cancel] error:', err.message);
@@ -160,7 +164,7 @@ async function cancelBooking(bookingId, button) {
   }
 }
 
-/* ── Render ── */
+/* ── Render list with advanced filtering ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `
@@ -171,18 +175,24 @@ function renderList() {
       </div>`;
     return;
   }
+
   const term = searchTerm.toLowerCase();
   const filtered = allBookings.filter(b => {
-    if (activeFilter === 'upcoming'  && b.status !== 'upcoming')  return false;
-    if (activeFilter === 'past'      && b.status !== 'past')       return false;
-    if (activeFilter === 'cancelled' && b.status !== 'cancelled')  return false;
+    // فلاتر رئيسية
+    if (activeFilter === 'upcoming' && (b.status !== 'upcoming' && b.status !== 'current')) return false;
+    if (activeFilter === 'past' && b.status !== 'past') return false;
+    if (activeFilter === 'cancelled' && b.status !== 'cancelled') return false;
+    if (activeFilter === 'all' && b.status === 'cancelled') return false;
+    // فلتر البحث
     if (!term) return true;
     return (b.hotelName + b.reference).toLowerCase().includes(term);
   });
+
   if (!filtered.length) {
     listEl.innerHTML = `<div class="res-state"><h3>Nothing matches</h3><p>Try different filters.</p></div>`;
     return;
   }
+
   listEl.innerHTML = filtered.map(b => {
     const isCancelled = b.status === 'cancelled';
     const cover   = HOTEL_COVERS[b.hotelName] || '';
@@ -217,6 +227,18 @@ function renderList() {
   }).join('');
 }
 
+/* ── Update active filter UI (highlight selected chip) ── */
+function updateFilterUI() {
+  const chips = document.querySelectorAll('.res-chip');
+  chips.forEach(chip => {
+    if (chip.dataset.filter === activeFilter) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+}
+
 /* ── Load bookings from server ── */
 async function load() {
   if (!user) {
@@ -238,16 +260,17 @@ async function load() {
     showToast('Failed to load reservations. Check connection.', 'error');
   }
   renderList();
+  updateFilterUI();  // تأكيد الزر النشط بعد التحميل
 }
 
 /* ── Events ── */
 searchEl?.addEventListener('input', e => { searchTerm = e.target.value.trim(); renderList(); });
+
 filtersEl?.addEventListener('click', e => {
   const btn = e.target.closest('.res-chip');
   if (!btn) return;
-  filtersEl.querySelectorAll('.res-chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
   activeFilter = btn.dataset.filter;
+  updateFilterUI();
   renderList();
 });
 
