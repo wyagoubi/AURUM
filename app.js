@@ -82,15 +82,25 @@ function showPage(id) {
   navLinks.forEach(l => { if (l.dataset.page === id) l.classList.add('active'); });
   document.querySelector('.nav-links')?.classList.remove('mobile-open');
 
-  // تحديث عنوان URL (اختياري)
+  // تحديث عنوان URL
   const newUrl = new URL(window.location.href);
   newUrl.searchParams.set('page', id);
   window.history.pushState({}, '', newUrl);
 
-  // ✅ إضافة هذا الجزء: مسح حقل الوجهة عند العودة إلى الصفحة الرئيسية
+  // ✅ عند العودة إلى الصفحة الرئيسية: مسح حقل الوجهة
   if (id === 'home') {
     const locationInput = document.getElementById('s-location');
     if (locationInput) locationInput.value = '';
+  }
+
+  // ✅ عند الدخول إلى صفحة النتائج: إعادة البحث بناءً على حقل الوجهة الحالي
+  if (id === 'results') {
+    const location = document.getElementById('s-location')?.value.trim() || '';
+    const rooms = parseInt(document.getElementById('s-rooms')?.value) || 1;
+    const children = parseInt(document.getElementById('s-children')?.value) || 0;
+    const price = document.getElementById('s-price')?.value || 'any';
+    const hotels = filterHotels(location, rooms, children, price);
+    renderResults(hotels, location, rooms, children, price);
   }
 }
 
