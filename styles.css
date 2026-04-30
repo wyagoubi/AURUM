@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════
    AURUM — styles.css  (Dark / Light Mode)
+   FIXED: navbar background opacity, removed underline artifacts
 ═══════════════════════════════════════════════ */
 
 /* ── DARK MODE (default) ── */
@@ -99,16 +100,17 @@ input, select, textarea { font-family:'Jost',sans-serif; }
 .container { max-width:1280px; margin:0 auto; padding:0 60px; }
 @media(max-width:768px){ .container { padding:0 20px; } }
 
-/* ═══════════ NAV ═══════════ */
+/* ═══════════ NAV (UPDATED) ═══════════ */
 nav {
   position:fixed; top:0; left:0; right:0; z-index:1000;
   padding:22px 60px;
   display:flex; align-items:center; justify-content:space-between;
-  transition: background 0.4s, padding 0.3s, border-color 0.4s;
+  transition: background 0.4s, padding 0.3s, border-color 0.4s, backdrop-filter 0.3s;
+  background: transparent;
 }
 nav.scrolled {
   background: var(--navbar-bg);
-  backdrop-filter:blur(20px);
+  backdrop-filter: blur(16px);
   padding:14px 60px;
   border-bottom:1px solid var(--border-s);
   box-shadow: var(--shadow);
@@ -123,14 +125,17 @@ nav.scrolled {
 .nav-links a {
   font-size:10px; letter-spacing:3px; text-transform:uppercase;
   color:var(--text-m); font-weight:500;
-  transition:color 0.3s; position:relative; padding-bottom:3px;
+  transition:color 0.3s, border-bottom-color 0.3s;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 3px;
 }
-.nav-links a::after {
-  content:''; position:absolute; bottom:0; left:0;
-  width:0; height:1px; background:var(--gold); transition:width 0.3s;
+.nav-links a:hover, .nav-links a.active {
+  color:var(--gold);
+  border-bottom-color: var(--gold);
 }
-.nav-links a:hover::after, .nav-links a.active::after { width:100%; }
-.nav-links a:hover, .nav-links a.active { color:var(--gold); }
+/* Remove pseudo-element that may cause stray lines */
+.nav-links a::after { display: none; }
 
 /* Nav actions */
 .nav-actions { display:flex; align-items:center; gap:14px; }
@@ -2242,8 +2247,6 @@ nav.scrolled {
 }
 @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 @keyframes fabIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-
-
 
 /* ══════════════════════════════════════════
    NAV RESERVATIONS BUTTON
