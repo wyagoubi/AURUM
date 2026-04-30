@@ -13,11 +13,11 @@
 <body class="dark-mode">
 
 <nav id="navbar">
-  <a href="index.html" class="logo" style="text-decoration:none;color:inherit">AUR<span>UM</span></a>
+  <a href="index.html?page=home" class="logo" style="text-decoration:none;color:inherit">AUR<span>UM</span></a>
   <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
   <ul class="nav-links">
-    <li><a href="index.html" class="nav-link">Discover</a></li>
-    <li><a href="index.html#hotels" class="nav-link">Hotels</a></li>
+    <li><a href="index.html?page=home" class="nav-link">Discover</a></li>
+    <li><a href="index.html?page=results" class="nav-link">Hotels</a></li>
     <li><a href="reservations.html" class="nav-link active">My Reservations</a></li>
     <li><a href="owner.html" class="nav-link">List Property</a></li>
   </ul>
@@ -67,5 +67,20 @@
 <div id="toastContainer" class="toast-container"></div>
 
 <script src="reservations.js"></script>
+
+<script>
+  // تأثير الشريط عند التمرير (مطابق لـ index.html)
+  const navbarScroll = document.getElementById('navbar');
+  if (navbarScroll) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 40) {
+        navbarScroll.classList.add('scrolled');
+      } else {
+        navbarScroll.classList.remove('scrolled');
+      }
+    });
+  }
+</script>
+
 </body>
 </html>
