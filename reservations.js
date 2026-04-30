@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* FIXED: normalizeBooking تحترم status من الخادم + إصلاح أزرار الإلغاء */
+/* FINAL FIX: Event Delegation + Auth Headers + normalizeBooking */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -8,8 +8,10 @@ const body = document.body;
 const savedTheme = localStorage.getItem('aurum-theme') || 'dark-mode';
 body.className = savedTheme;
 const themeToggle = document.getElementById('themeToggle');
-const themeIcon = document.getElementById('themeIcon');
-function syncThemeIcon() { if (themeIcon) themeIcon.textContent = body.classList.contains('dark-mode') ? '☀' : '☾'; }
+const themeIcon   = document.getElementById('themeIcon');
+function syncThemeIcon() {
+  if (themeIcon) themeIcon.textContent = body.classList.contains('dark-mode') ? '☀' : '☾';
+}
 syncThemeIcon();
 themeToggle?.addEventListener('click', () => {
   const isDark = body.classList.contains('dark-mode');
@@ -33,15 +35,23 @@ function showToast(msg, type = 'success') {
   setTimeout(() => { t.classList.add('toast-out'); setTimeout(() => t.remove(), 350); }, 3500);
 }
 
+/* ── Auth headers helper — يجرب JWT أولاً ثم Session ── */
+function getAuthHeaders(extra = {}) {
+  const token = localStorage.getItem('aurum-token');
+  const headers = { 'Content-Type': 'application/json', ...extra };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 /* ── Auth ── */
 const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
 const navUserLogged = document.getElementById('navUserLogged');
-const navAvatar = document.getElementById('navAvatar');
-const navUsername = document.getElementById('navUsername');
-const navUserGuest = document.getElementById('navUser');
+const navAvatar     = document.getElementById('navAvatar');
+const navUsername   = document.getElementById('navUsername');
+const navUserGuest  = document.getElementById('navUser');
 if (user) {
   navUserLogged?.classList.remove('hidden');
-  if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
+  if (navAvatar)   navAvatar.textContent   = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
   if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
 } else {
   navUserGuest?.classList.remove('hidden');
@@ -52,33 +62,33 @@ document.getElementById('navSignout')?.addEventListener('click', () => {
   window.location.href = 'auth.html';
 });
 
-/* ── Hotel Images (full list) ── */
+/* ── Hotel & Room Images ── */
 const HOTEL_COVERS = {
-  'Le Grand Aurum Paris': 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
-  'Aurum Palace London': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
-  'Aurum Medina Marrakesh': 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80',
-  'Aurum Sakura Tokyo': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
-  'Aurum Overwater Maldives': 'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80',
-  'Aurum Summit Aspen': 'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
-  'Aurum Duomo Florence': 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80',
-  'Aurum Sentosa Singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80',
-  'Aurum Royale Dubai': 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80',
-  'Aurum Bosphorus Istanbul': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=400&q=80',
-  'Aurum Riviera Santorini': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
-  'Aurum Zen Bali': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
+  'Le Grand Aurum Paris':      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
+  'Aurum Palace London':       'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
+  'Aurum Medina Marrakesh':    'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80',
+  'Aurum Sakura Tokyo':        'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
+  'Aurum Overwater Maldives':  'https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80',
+  'Aurum Summit Aspen':        'https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80',
+  'Aurum Duomo Florence':      'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80',
+  'Aurum Sentosa Singapore':   'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80',
+  'Aurum Royale Dubai':        'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80',
+  'Aurum Bosphorus Istanbul':  'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=400&q=80',
+  'Aurum Riviera Santorini':   'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
+  'Aurum Zen Bali':            'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
 };
 const ROOM_COVERS = {
-  'Deluxe Room': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&q=80',
-  'Junior Suite': 'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=300&q=80',
-  'Grand Suite': 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=300&q=80',
+  'Deluxe Room':        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=300&q=80',
+  'Junior Suite':       'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=300&q=80',
+  'Grand Suite':        'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=300&q=80',
   'Presidential Suite': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=300&q=80',
 };
 
 let allBookings = [];
 let activeFilter = 'all';
-let searchTerm = '';
-const listEl = document.getElementById('resList');
-const searchEl = document.getElementById('resSearch');
+let searchTerm   = '';
+const listEl    = document.getElementById('resList');
+const searchEl  = document.getElementById('resSearch');
 const filtersEl = document.getElementById('resFilters');
 
 function fmtMoney(n) { return '$' + (Number(n) || 0).toLocaleString(); }
@@ -87,73 +97,80 @@ function fmtDate(iso) {
   const d = new Date(iso + (iso.length === 10 ? 'T00:00:00Z' : ''));
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
-function escapeHtml(s) { return String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
 
-/* ── FIX #1: normalizeBooking تحترم status=cancelled من الخادم أولاً ── */
+/* ── normalizeBooking: يحترم status من الخادم أولاً ── */
 function normalizeBooking(b) {
-  // إذا الخادم قال cancelled → نحترمها مباشرة بدون إعادة حساب
-  const serverStatus = b.status || 'confirmed';
-
+  const serverStatus = (b.status || '').toLowerCase();
   let status;
+
   if (serverStatus === 'cancelled') {
     status = 'cancelled';
   } else {
-    // احسب الحالة الفعلية بناءً على التواريخ
-    const now = new Date();
-    now.setUTCHours(0, 0, 0, 0);
+    const now      = new Date(); now.setUTCHours(0, 0, 0, 0);
     const checkIn  = new Date((b.check_in  || b.checkIn)  + 'T00:00:00Z');
     const checkOut = new Date((b.check_out || b.checkOut) + 'T00:00:00Z');
-
-    if (checkOut < now)                         status = 'past';
-    else if (checkIn <= now && checkOut >= now)  status = 'current';
-    else                                         status = 'upcoming';
+    if      (checkOut < now)                        status = 'past';
+    else if (checkIn <= now && checkOut >= now)      status = 'current';
+    else                                             status = 'upcoming';
   }
 
   return {
-    id: b.id,
-    reference: b.reference || ('AUR-' + String(b.id).padStart(6, '0')),
-    hotelName: b.hotel_name || b.hotelName || 'AURUM Stay',
-    roomType: b.room_type || b.roomType || 'Deluxe Room',
-    rooms: b.rooms || 1,
-    guests: b.guests || 1,
-    checkIn: b.check_in || b.checkIn,
-    checkOut: b.check_out || b.checkOut,
-    nights: b.nights || 1,
-    total: b.total || 0,
-    status: status,
+    id:           b.id,
+    reference:    b.reference || ('AUR-' + String(b.id).padStart(6, '0')),
+    hotelName:    b.hotel_name   || b.hotelName   || 'AURUM Stay',
+    roomType:     b.room_type    || b.roomType     || 'Deluxe Room',
+    rooms:        b.rooms  || 1,
+    guests:       b.guests || 1,
+    checkIn:      b.check_in  || b.checkIn,
+    checkOut:     b.check_out || b.checkOut,
+    nights:       b.nights || 1,
+    total:        b.total  || 0,
+    status,
     paymentLast4: b.payment_last4 || b.paymentLast4 || '',
-    createdAt: b.created_at || b.createdAt || new Date().toISOString(),
+    createdAt:    b.created_at   || b.createdAt    || new Date().toISOString(),
   };
 }
 
-/* ── Cancel function ── */
+/* ── Cancel ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
-  button.disabled = true;
+
+  button.disabled    = true;
   button.textContent = 'Cancelling...';
+
   try {
     const res = await fetch(`${API_BASE}/bookings/${bookingId}/cancel`, {
-      method: 'POST',
+      method:      'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: '' })
+      headers:     getAuthHeaders(),
+      body:        JSON.stringify({ reason: '' })
     });
-    const data = await res.json();
+
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+
+    // سجّل الرد في الكونسول لمعرفة المشكلة
+    console.log('[cancel] HTTP:', res.status, '| data:', JSON.stringify(data));
+
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
+
     showToast('Reservation cancelled successfully.', 'success');
-    // إعادة تحميل القائمة بالكامل من الخادم
     await load();
+
   } catch (err) {
-    console.error('Cancel error:', err);
+    console.error('[cancel] error:', err.message);
     showToast(`Error: ${err.message}`, 'error');
-    button.disabled = false;
+    button.disabled    = false;
     button.textContent = 'Cancel';
   }
 }
 
-/* ── Render list ── */
+/* ── Render ── */
 function renderList() {
   if (!allBookings.length) {
     listEl.innerHTML = `<div class="res-state"><h3>No reservations yet</h3><p>Book a hotel to see it here.</p><a class="btn-ghost" href="index.html">Discover hotels</a></div>`;
@@ -161,9 +178,9 @@ function renderList() {
   }
   const term = searchTerm.toLowerCase();
   const filtered = allBookings.filter(b => {
-    if (activeFilter === 'upcoming'  && b.status !== 'upcoming')   return false;
-    if (activeFilter === 'past'      && b.status !== 'past')        return false;
-    if (activeFilter === 'cancelled' && b.status !== 'cancelled')   return false;
+    if (activeFilter === 'upcoming'  && b.status !== 'upcoming')  return false;
+    if (activeFilter === 'past'      && b.status !== 'past')       return false;
+    if (activeFilter === 'cancelled' && b.status !== 'cancelled')  return false;
     if (!term) return true;
     return (b.hotelName + b.reference).toLowerCase().includes(term);
   });
@@ -203,19 +220,9 @@ function renderList() {
         </div>
       </article>`;
   }).join('');
-
-  /* ── FIX #2: استخدام onclick بدلاً من addEventListener لتجنب تكرار المستمعين ── */
-  document.querySelectorAll('.cancel-btn').forEach(btn => {
-    const id = parseInt(btn.dataset.id);
-    if (isNaN(id)) return;
-    btn.onclick = (e) => {
-      e.preventDefault();
-      cancelBooking(id, btn);
-    };
-  });
 }
 
-/* ── Load bookings from server ── */
+/* ── Load ── */
 async function load() {
   if (!user) {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
@@ -223,15 +230,19 @@ async function load() {
   }
   listEl.innerHTML = '<div class="res-state"><div class="res-spinner"></div><p>Loading reservations...</p></div>';
   try {
-    const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/bookings`, {
+      credentials: 'include',
+      headers:     getAuthHeaders()
+    });
     const data = await res.json();
+    console.log('[load] response:', JSON.stringify(data));
     if (data.success && Array.isArray(data.data)) {
       allBookings = data.data.map(normalizeBooking);
     } else {
       throw new Error(data.error || 'Invalid response');
     }
   } catch (err) {
-    console.error('Load error:', err);
+    console.error('[load] error:', err.message);
     allBookings = [];
     showToast('Failed to load reservations. Check connection.', 'error');
   }
@@ -248,4 +259,13 @@ filtersEl?.addEventListener('click', e => {
   activeFilter = btn.dataset.filter;
   renderList();
 });
+
+/* ── Event Delegation — مستمع واحد دائم يعمل مع كل الأزرار حتى بعد إعادة بناء HTML ── */
+listEl.addEventListener('click', e => {
+  const btn = e.target.closest('.cancel-btn');
+  if (!btn || btn.disabled) return;
+  const id = parseInt(btn.dataset.id);
+  if (!isNaN(id)) cancelBooking(id, btn);
+});
+
 load();
