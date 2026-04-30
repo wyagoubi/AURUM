@@ -71,9 +71,14 @@ const navLinks = document.querySelectorAll('.nav-link');
 
 window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40));
 
+// متغير لحفظ حالة إعادة التعيين (وضع في نطاق أعلى، خارج الدالة)
+let needsResultsReset = false;
+
 function showPage(id) {
+  // إزالة النشاط من كل الصفحات والروابط
   pages.forEach(p => p.classList.remove('active'));
   navLinks.forEach(l => l.classList.remove('active'));
+  
   const target = document.getElementById('page-' + id);
   if (target) {
     target.classList.add('active');
@@ -83,10 +88,29 @@ function showPage(id) {
   navLinks.forEach(l => { if (l.dataset.page === id) l.classList.add('active'); });
   document.querySelector('.nav-links')?.classList.remove('mobile-open');
   
-  // تحديث عنوان URL بدون إعادة تحميل الصفحة (للحفاظ على الحالة)
+  // تحديث عنوان URL للحفاظ على الحالة (بدون إعادة تحميل)
   const newUrl = new URL(window.location.href);
   newUrl.searchParams.set('page', id);
   window.history.pushState({}, '', newUrl);
+
+  // ======== المنطق الخاص بإعادة تعيين نتائج البحث ========
+  if (id === 'home') {
+    // عند الانتقال إلى الصفحة الرئيسية، نضع علامة لإعادة التعيين عند العودة إلى results
+    needsResultsReset = true;
+    // (اختياري) مسح حقل الوجهة أيضاً
+    const locationInput = document.getElementById('s-location');
+    if (locationInput) locationInput.value = '';
+  } 
+  else if (id === 'results' && needsResultsReset) {
+    // عند العودة إلى نتائج البحث وكانت هناك علامة إعادة تعيين
+    needsResultsReset = false;
+    // عرض جميع الفنادق (بدون فلتر)
+    const allHotels = filterHotels('', 1, 0, 'any');
+    renderResults(allHotels, '', 1, 0, 'any');
+    // التأكد من حقل الوجهة فارغ
+    const locationInput = document.getElementById('s-location');
+    if (locationInput) locationInput.value = '';
+  }
 }
 
 navLinks.forEach(link => {
