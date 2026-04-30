@@ -2251,15 +2251,27 @@ nav.scrolled {
 /* ══════════════════════════════════════════
    NAV RESERVATIONS BUTTON
 ══════════════════════════════════════════ */
-.nav-btn-reservations {
-  background: rgba(201,169,110,0.1);
-  border: 1px solid rgba(201,169,110,0.3);
-  color: var(--gold) !important;
-  padding: 6px 12px; border-radius: 6px;
-  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-  text-decoration: none; transition: all 0.2s;
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 22px 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.4s, padding 0.3s, border-color 0.4s, backdrop-filter 0.3s;
+  background: transparent;
 }
-.nav-btn-reservations:hover { background: rgba(201,169,110,0.2); }
+
+nav.scrolled {
+  background: var(--navbar-bg);
+  backdrop-filter: blur(16px);
+  padding: 14px 60px;
+  border-bottom: 1px solid var(--border-s);
+  box-shadow: var(--shadow);
+}
 
 /* ══════════════════════════════════════════
    WELCOME OVERLAY (sound/greeting)
