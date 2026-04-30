@@ -227,7 +227,104 @@
 }
 .dc-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); }
 .dc-period { font-size: 11px; color: var(--text-muted); }
-.dc-link { background: none; border: none; color: var(--gold); font-size: 11px; cursor: pointer; }
+.dc-link { 
+  background: none; 
+  border: none; 
+  color: var(--gold); 
+  font-size: 11px; 
+  cursor: pointer; 
+  position: relative; 
+  z-index: 1; 
+  pointer-events: auto;
+}
+
+
+.ai-insights-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, rgba(201,169,110,0.08) 0%, rgba(201,169,110,0.04) 100%);
+  border: 1px solid rgba(201,169,110,0.15);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(12px);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.ai-insights-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201,169,110,0.03) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.ai-insights-banner:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(201,169,110,0.15), 0 0 0 1px rgba(201,169,110,0.2);
+}
+.ai-insights-banner:hover::before { opacity: 1; }
+.aib-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(201,169,110,0.3));
+  transition: transform 0.3s ease;
+}
+.ai-insights-banner:hover .aib-icon { transform: rotate(5deg) scale(1.05); }
+.aib-icon svg { width: 24px; height: 24px; color: var(--black); }
+.aib-content { flex: 1; min-width: 0; }
+.aib-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+.aib-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  font-weight: 300;
+  margin-bottom: 0;
+}
+.aib-metric {
+  text-align: center;
+  min-width: 80px;
+}
+.aib-metric-val {
+  font-family: var(--font-d);
+  font-size: 32px;
+  font-weight: 300;
+  background: linear-gradient(135deg, var(--gold), #f0d9b5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  display: block;
+  animation: metricPulse 2s infinite;
+}
+@keyframes metricPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.aib-metric-lbl {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.8;
+  margin-top: 4px;
+}
 
 /* Occupancy ring */
 .occ-visual { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
@@ -264,12 +361,205 @@
 .bl-status.pending   { color: #f1c40f; border-color: rgba(241,196,15,0.3); background: rgba(241,196,15,0.07); }
 .bl-status.upcoming  { color: var(--gold); border-color: var(--border); background: var(--gold-glow); }
 
+/* Arrivals & Departures Enhanced - Guest Activity Card */
+.arrivals-departures {
+  display: flex;
+  gap: 2px;
+  margin-top: 24px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border-soft);
+}
+.ad-block {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  background: linear-gradient(135deg, rgba(63,184,145,0.06) 0%, transparent 100%);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.ad-block:nth-child(2) { background: linear-gradient(135deg, rgba(241,196,15,0.06) 0%, transparent 100%); }
+.ad-block:nth-child(3) { background: linear-gradient(135deg, var(--gold-glow) 0%, transparent 100%); }
+.ad-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  transition: left 0.6s;
+}
+.ad-block:hover::before { left: 100%; }
+.ad-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.ad-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.ad-label svg { width: 14px; height: 14px; stroke-width: 2.5; flex-shrink: 0; }
+.ad-count {
+  font-family: var(--font-d);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--white);
+  line-height: 1;
+}
+.ad-sep {
+  width: 1px;
+  background: var(--border-soft);
+  align-self: stretch;
+  opacity: 0.5;
+}
+
+
 /* Revenue bars */
 .rev-chart-area { padding: 8px 0; }
 .rev-bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
 .rev-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .rev-bar { width: 100%; background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%); transition: height 1s ease; border-radius: 2px 2px 0 0; }
 .rev-bar-val { font-size: 9px; color: var(--text-muted); font-family: var(--font-d); }
+
+.pace-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+.ps-item {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.ps-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201,169,110,0.08), rgba(201,169,110,0.04));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ps-item:hover::before { opacity: 1; }
+.ps-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(201,169,110,0.15);
+}
+.ps-val {
+  font-family: var(--font-d);
+  font-size: 28px;
+  font-weight: 300;
+  background: linear-gradient(135deg, var(--gold), #f0d9b5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  display: block;
+  margin-bottom: 6px;
+}
+.ps-val.ps-val-warn {
+  background: linear-gradient(135deg, #f1c40f, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ps-lbl {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* AI Analytics Cards Enhanced - Revenue & Demand Forecast */
+.dash-grid-2 .dash-card {
+  background: linear-gradient(135deg, rgba(14,18,22,0.8) 0%, var(--dark2) 100%);
+  border: 1px solid rgba(201,169,110,0.1);
+  backdrop-filter: blur(16px);
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.dash-grid-2 .dash-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201,169,110,0.02), transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.dash-grid-2 .dash-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(201,169,110,0.2);
+}
+.dash-grid-2 .dash-card:hover::before { opacity: 1; }
+.dash-grid-2 .dc-header {
+  border-bottom: 1px solid rgba(201,169,110,0.1);
+}
+.dash-grid-2 .dc-title {
+  background: linear-gradient(135deg, var(--gold), #f0d9b5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+.dash-grid-2 .dc-period.ai-badge {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: var(--black);
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.dash-grid-2 .forecast-insight {
+  background: rgba(201,169,110,0.06);
+  border-left: 3px solid var(--gold);
+  padding: 16px;
+  margin-top: 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 12px;
+  font-weight: 400;
+}
+.dash-grid-2 .demand-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+.dl-item {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.dl-dot.gold { background: var(--gold); }
+.dl-dot.yellow { background: #f1c40f; }
+.dl-dot.teal { background: #64a0dc; }
+
+
 .rev-labels { display: flex; gap: 8px; margin-top: 8px; border-top: 1px solid var(--border-soft); padding-top: 8px; }
 .rev-label { flex: 1; text-align: center; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
 
@@ -325,7 +615,105 @@
 }
 .bookings-table td { padding: 14px 16px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border-soft); }
 .bookings-table tr:hover td { background: rgba(201,169,110,0.03); }
-.bt-status { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border: 1px solid; }
+.bt-status { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border: 1px solid; border-radius: 20px; font-weight: 500; transition: all 0.2s; }
+
+/* Bookings Table Enhanced */
+.bookings-table-wrap {
+  background: linear-gradient(135deg, var(--dark2) 0%, rgba(14,18,22,0.9) 100%);
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.bookings-table th {
+  background: linear-gradient(135deg, rgba(201,169,110,0.08), transparent);
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid var(--gold-glow);
+}
+.bookings-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.2s;
+}
+.bookings-table tr:hover td {
+  background: linear-gradient(90deg, rgba(201,169,110,0.06), transparent);
+}
+.bookings-table tr:last-child td { border-bottom: none; }
+
+/* Light Mode Bookings Table */
+body.light-mode .bookings-table-wrap {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f6f4 100%);
+  border-color: rgba(64,138,113,0.2);
+  box-shadow: 0 8px 32px rgba(64,138,113,0.15);
+}
+body.light-mode .bookings-table th {
+  background: linear-gradient(135deg, rgba(64,138,113,0.12), transparent);
+  color: #408A71;
+  border-bottom-color: rgba(64,138,113,0.3);
+}
+body.light-mode .bookings-table tr:hover td {
+  background: linear-gradient(90deg, rgba(64,138,113,0.08), transparent);
+}
+body.light-mode .bt-status {
+  color: #408A71;
+  border-color: rgba(64,138,113,0.3);
+}
+
+/* Light Mode - Previous Cards */
+body.light-mode .ai-insights-banner {
+  background: linear-gradient(135deg, rgba(64,138,113,0.1) 0%, rgba(64,138,113,0.05) 100%);
+  border-color: rgba(64,138,113,0.2);
+}
+body.light-mode .aib-metric-val {
+  background: linear-gradient(135deg, #408A71, #6ab897);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+body.light-mode .aib-label {
+  color: #408A71;
+}
+body.light-mode .arrivals-departures {
+  border-top-color: rgba(64,138,113,0.2);
+}
+body.light-mode .ad-block {
+  background: linear-gradient(135deg, rgba(64,138,113,0.08) 0%, transparent 100%);
+}
+body.light-mode .ad-block:nth-child(2) { background: linear-gradient(135deg, rgba(100,160,220,0.08) 0%, transparent 100%); }
+body.light-mode .ad-block:nth-child(3) { background: linear-gradient(135deg, rgba(64,138,113,0.08) 0%, transparent 100%); }
+body.light-mode .ad-count { color: #1a2e28; }
+body.light-mode .pace-stats .ps-item::before {
+  background: linear-gradient(135deg, rgba(64,138,113,0.1), rgba(64,138,113,0.05));
+}
+body.light-mode .ps-val {
+  background: linear-gradient(135deg, #408A71, #6ab897);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+body.light-mode .dash-grid-2 .dash-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f6f4 100%);
+  border-color: rgba(64,138,113,0.15);
+}
+body.light-mode .dash-grid-2 .dc-title {
+  background: linear-gradient(135deg, #408A71, #6ab897);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+body.light-mode .dash-grid-2 .dc-period.ai-badge {
+  background: linear-gradient(135deg, #408A71, #6ab897);
+  color: #f8fafc;
+}
+
+
+
 
 /* Rooms */
 .rooms-legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
