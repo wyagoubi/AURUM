@@ -36,40 +36,27 @@ function showToast(msg, type = 'success') {
 }
 
 /* ── Auth ── */
-function updateAuthUI() {
-  const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-  const navUserGuest = document.getElementById('navUser');
-  const navUserLogged = document.getElementById('navUserLogged');
-  const navAvatar = document.getElementById('navAvatar');
-  const navUsername = document.getElementById('navUsername');
+const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+const navUserLogged = document.getElementById('navUserLogged');
+const navAvatar     = document.getElementById('navAvatar');
+const navUsername   = document.getElementById('navUsername');
+const navUserGuest  = document.getElementById('navUser');
 
-  if (user && user.email) {
-    // مسجل دخول: إخفاء زر Sign In وإظهار معلومات المستخدم
-    if (navUserGuest) navUserGuest.classList.add('hidden');
-    if (navUserLogged) navUserLogged.classList.remove('hidden');
-    if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
-    if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
-  } else {
-    // غير مسجل: إظهار زر Sign In وإخفاء قسم المستخدم
-    if (navUserGuest) navUserGuest.classList.remove('hidden');
-    if (navUserLogged) navUserLogged.classList.add('hidden');
-  }
-}
-
-// استدعاء الدالة بعد تحميل DOM بالكامل
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', updateAuthUI);
+if (user && user.email) {
+  navUserGuest?.classList.add('hidden');
+  navUserLogged?.classList.remove('hidden');
+  if (navAvatar) navAvatar.textContent = user.initials || (user.name?.[0] ?? 'A').toUpperCase();
+  if (navUsername) navUsername.textContent = (user.name || 'Guest').split(' ')[0];
 } else {
-  updateAuthUI();
+  navUserGuest?.classList.remove('hidden');
+  navUserLogged?.classList.add('hidden');
 }
 
-// تسجيل الخروج
 document.getElementById('navSignout')?.addEventListener('click', () => {
   localStorage.removeItem('aurum-user');
   localStorage.removeItem('aurum-token');
   window.location.href = 'auth.html';
 });
-
 /* ── Images ── */
 const HOTEL_COVERS = {
   'Le Grand Aurum Paris':      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
