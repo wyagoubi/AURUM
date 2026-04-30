@@ -1,6 +1,6 @@
 /* AURUM — Owner Dashboard JS (integrated with backend API) */
 
-const API_BASE = 'https://aurum-m4v8.onrender.com/api'; // ← ضع رابط Render هنا
+const API_BASE = '/backend/api';
 
 /* ── Theme ── */
 const body = document.body;
@@ -98,7 +98,6 @@ async function renderRecentBookings() {
   if (token) {
     try {
       const res = await fetch(`${API_BASE}/analytics/dashboard`, {
-        credentials: 'include',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -388,8 +387,7 @@ async function updateKPIsFromAPI() {
   const token = localStorage.getItem('aurum-token');
   if (!token) return;
   try {
-    const res = await fetch(`${API_BASE}/analytics/dashboard`, { credentials: 'include',
-        headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(`${API_BASE}/analytics/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
     if (data.success && data.data.stats) {
       document.getElementById('kpiRevenue').textContent = '$' + (data.data.stats.total_revenue || 0).toLocaleString();
