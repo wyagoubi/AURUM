@@ -1,121 +1,314 @@
+# AURUM — Luxury Hotel Booking Platform
 
-## Setup & Development
+> *"Where Luxury Finds You"*
 
-1. **Clone the repository**  
-   ```bash
-   git clone https://github.com/wyagoubi/AURUM.git
-   cd AURUM حجوزات الضيف
+AURUM is a production-grade, full-stack hotel booking web application built as a university project. It allows guests to discover luxury hotels worldwide, make reservations, and interact with an AI-powered concierge. Hotel owners can list their properties, manage room availability, and track performance through a dedicated analytics dashboard.
 
+The frontend is hosted on **GitHub Pages** and communicates with a **Node.js/Express REST API** deployed on **Render.com**, backed by a managed **PostgreSQL** database.
 
+## 🔗 Live Demo
+
+**[https://wyagoubi.github.io/AURUM/](https://wyagoubi.github.io/AURUM/)**
+
+> The application is fully live. You can register as a guest or owner, search hotels, complete a booking, and chat with the AI concierge.
 
 ---
 
-## 2. Backend README.md (for the `aurum-backend` repository)
+## ✨ Features
 
-```markdown
-# AURUM Backend – Node.js + Express + PostgreSQL REST API
+### 👤 Guest Features
 
-This is the backend REST API for the **AURUM** hotel booking platform.  
-It handles user authentication, hotel & room management, bookings, analytics, and AI concierge communication.
+- **Hotel Search** — Search by destination (city or country), number of rooms, number of children, and nightly budget. Results are fetched from the API and filtered client-side for instant response.
 
-## Live API Base URL
-[**https://aurum-m4v8.onrender.com/api**](https://aurum-m4v8.onrender.com/api)  
-Health check: [https://aurum-m4v8.onrender.com/api/healthz](https://aurum-m4v8.onrender.com/api/healthz)
+- 
+- **Hotel Galleries** — Each hotel has a multi-tab photo gallery (Exterior, Lobby, Rooms, Amenities) using real Unsplash images. Room types also have individual photos.
 
-## Features
+- 
+- **Booking Flow** — A full booking modal lets guests pick check-in/check-out dates, room type, and enter mock payment details with card number validation (Luhn algorithm).
 
-- **Dual‑Mode Authentication**  
-  – Server‑side sessions stored in PostgreSQL (`connect-pg-simple`) with `SameSite=none; Secure` cookies.  
-  – Fallback HMAC‑signed tokens for API clients (stored in `localStorage`).
+- 
+- **My Reservations** — A dedicated page lists all past and upcoming bookings with status badges (Upcoming / In Stay / Past / Cancelled), total cost, and reference number.
+- **Countdown Badges** — Each reservation card shows how many days remain until check-in or check-out, updating in real time.
 
-- **Hotel & Room Management**  
-  – CRUD operations for hotels and rooms (owner‑protected).  
-  – Automatic seeding of 12 luxury hotels with 4 room types each on first run.
+- 
+- **1-Day Alerts** — A toast notification fires automatically when check-in or check-out is exactly one day away. Each alert fires only once per booking using `localStorage`.
 
-- **Booking System**  
-  – Create, view, and cancel bookings.  
-  – Cancel reason (optional) stored in `cancel_reason` column.  
-  – Past stays cannot be cancelled (server‑side validation).
+- 
+- **Cancel Reservation** — Guests can cancel upcoming bookings. The cancellation is sent to the API and the local cache is updated instantly — no page reload needed.
 
-- **Analytics for Owners**  
-  – Aggregated revenue, total bookings, occupancy rate, and average daily rate.  
-  – Booking pace (next 30 days) and revenue breakdown by month.
+- 
+- **AI Concierge** — A floating chatbot powered by the Claude/Groq API. The system prompt is built dynamically from live hotel data in the database. The concierge responds in the same language the user writes in and keeps answers to 2–3 sentences.
 
-- **AI Concierge**  
-  – Proxy to Anthropic Claude API (or OpenAI) with a dynamic system prompt that injects live hotel data.  
-  – Returns a natural language reply plus an optional `action` object (SEARCH, BOOK, GO_RESERVATIONS, etc.).
+- 
+- **Dark / Light Theme** — A theme toggle switches between a dark luxury palette and a light mode. The preference is saved in `localStorage` and applied on every page.
 
-- **Automatic Database Setup**  
-  – `initDb.js` creates all tables and seeds hotels/rooms when the database is empty.
+- 
+- **Offline-First Cache** — After a successful API fetch, all bookings are saved to `localStorage`. If the user signs out or loses connectivity, their reservations remain visible from cache.
 
-## File Structure
+### 🏨 Owner Features
 
+- **List Property** — A multi-step wizard guides hotel owners through adding a new property: hotel details → room types and prices → amenities → review and submit.
 
+- 
+- **Owner Dashboard** — An analytics page displays total revenue, total bookings, occupancy rate, and average nightly rate — all computed server-side from real booking data.
 
-aurum-backend/
+- 
+- **Room Status Management** — A visual room grid lets owners mark individual rooms as Available, Occupied, or Under Maintenance.
+
+### ⚙️ Technical Highlights
+
+- **Dual-Mode Authentication** — Session cookies (`HttpOnly`, `SameSite=none`, `Secure=true`) are used for browser clients. A signed HMAC Bearer token (stored in `localStorage`) is used as a fallback for cross-origin or expired-session scenarios. Both are verified by the same `getAuth()` middleware.
+
+- 
+- **Cross-Origin Setup** — The frontend (GitHub Pages) and backend (Render.com) are on different domains. CORS is configured to reflect the allowed origin with `credentials: true`. The session cookie is set with `SameSite=none; Secure` to work across domains.
+
+- 
+- **Role-Based Access Control** — Every protected route checks `req.auth.role`. Owner-only routes (`/owner/properties`, `/analytics/dashboard`) reject guest tokens with HTTP 403.
+
+- 
+- **Auto-Seeding Database** — On every deployment, `initDb.js` creates all tables if they don't exist and seeds 12 sample hotels with rooms, prices, and amenities — no manual SQL needed.
+
+- **I used Node.js for backend logic, but the database is fully designed using SQL. I also provided separate SQL scripts (schema and seed) to comply with relational database requirements
+
+SQL مستعمل لكن بطريقة مدمجة داخل backend + ملفات منفصلة
+- 
+- **Responsive Design** — Fully responsive across desktop, tablet, and mobile. Mobile navigation uses a slide-in menu. CSS custom properties (`--gold`, `--text`, `--bg`) power both dark and light themes from a single stylesheet.
+
+- 
+- **Vanilla JavaScript** — No frontend frameworks. All DOM manipulation, routing between pages, modal management, and API communication is written in plain JavaScript.
+
+---
+
+## 📁 Frontend — File Structure
+
+```
+AURUM/  (GitHub Pages — public repository)
+│
+├── index.html              # Homepage: hero section, search bar, featured
+│                           # destinations, hotel results grid, AI concierge widget
+│
+├── auth.html               # Unified login and register page for both guests
+│                           # and hotel owners. Role switching (Guest / Owner)
+│                           # changes the visible form fields.
+│
+├── reservations.html       # Guest reservations list: status badges, countdown
+│                           # timers, cancel button, offline cache display.
+│
+├── owner.html              # Multi-step property listing wizard:
+│                           # Step 1 - Hotel info, Step 2 - Rooms,
+│                           # Step 3 - Amenities, Step 4 - Review & Submit.
+│
+├── owner-dashboard.html    # Owner analytics dashboard: revenue card,
+│                           # occupancy rate, booking table, room status grid.
+│
+├── styles.css              # Global stylesheet: CSS variables for dark/light
+│                           # themes, navbar, hotel cards, modals, gallery,
+│                           # booking form, toast notifications, animations.
+│
+├── auth.css                # Styles specific to the auth page: role toggle
+│                           # tabs, form inputs, password strength indicator.
+│
+├── reservations.css        # Styles for the reservations page: booking cards,
+│                           # status badges, countdown badges, cancel modal.
+│
+├── owner.css               # Styles for the property wizard: step indicators,
+│                           # room type cards, amenity checkboxes.
+│
+├── owner-dashboard.css     # Styles for the dashboard: metric cards, charts,
+│                           # booking table, room status grid.
+│
+├── app.js                  # Core application logic:
+│                           # - Hotel data loading and filtering
+│                           # - Search bar with custom dropdowns
+│                           # - Hotel card rendering with real Unsplash images
+│                           # - Photo gallery (hotel / rooms / amenities tabs)
+│                           # - Booking modal (date picker, room selector, payment)
+│                           # - AI concierge widget (send/receive messages)
+│                           # - Nav auth state (show/hide based on login)
+│
+├── auth.js                 # Authentication logic:
+│                           # - Register and login API calls
+│                           # - Save user + token to localStorage
+│                           # - Role switching (guest ↔ owner)
+│                           # - Theme toggle and persistence
+│
+├── reservations.js         # Reservations page logic:
+│                           # - Fetch bookings from API with Bearer token
+│                           # - Render from localStorage cache if offline
+│                           # - Countdown and status computation
+│                           # - 1-day alert notifications
+│                           # - Cancel booking with instant cache update
+│
+├── owner.js                # Owner wizard logic:
+│                           # - Multi-step form navigation
+│                           # - Dynamic room type rows (add/remove)
+│                           # - Submit hotel + rooms to API
+│
+├── owner-dashboard.js      # Dashboard logic:
+│                           # - Fetch analytics from API
+│                           # - Render metric cards and booking table
+│                           # - Room status grid with status toggle
+│
+└── README.md               # This file
+```
+
+---
+
+## 📁 Backend — File Structure
+
+```
+aurum-backend/  (Render.com — private repository)
+│
 ├── src/
-│ ├── index.js # Entry point – starts the server
-│ ├── app.js # Express app setup (middleware, session, CORS, routes)
-│ ├── db.js # PostgreSQL connection pool
-│ ├── initDb.js # Creates tables and seeds initial data (hotels, rooms)
-│ ├── auth.js # Password hashing, HMAC token signing/verification, auth middleware
-│ └── routes/
-│ ├── auth.js # POST /register, POST /login, POST /logout, GET /me
-│ ├── hotels.js # GET /hotels, GET /hotels/:id (with Unsplash image mapping)
-│ ├── bookings.js # POST /bookings, GET /bookings, POST /bookings/:id/cancel
-│ ├── owner.js # POST /owner/properties, GET /owner/properties, DELETE /owner/properties/:id, GET /analytics/dashboard
-│ └── ai.js # POST /ai/concierge
-├── package.json # Dependencies (express, pg, bcryptjs, openai, express-session, connect-pg-simple, cors, dotenv)
-├── .env # Environment variables (not committed)
-├── .gitignore # Excludes node_modules, .env, etc.
-└── README.md # This file
+│   │
+│   ├── index.js            # Entry point. Starts the HTTP server on
+│   │                       # process.env.PORT (set automatically by Render).
+│   │
+│   ├── app.js              # Express application setup:
+│   │                       # - trust proxy (required on Render)
+│   │                       # - CORS with credentials and allowed origins
+│   │                       # - JSON body parser (2 MB limit)
+│   │                       # - Session middleware with PostgreSQL store
+│   │                       # - Route mounting under /api
+│   │                       # - Health check: GET /api/healthz
+│   │
+│   ├── db.js               # PostgreSQL connection pool using the `pg` library.
+│   │                       # Reads DATABASE_URL from environment. SSL enabled
+│   │                       # in production (rejectUnauthorized: false for Render).
+│   │
+│   ├── auth.js             # Shared authentication utilities:
+│   │                       # - hashPassword / verifyPassword (bcryptjs, cost 10)
+│   │                       # - signToken / verifyToken (HMAC-SHA256, base64url)
+│   │                       # - getAuth(req) — checks session first, then Bearer
+│   │                       # - requireAuth / requireOwner middleware
+│   │
+│   ├── initDb.js           # Database initialisation script (runs before server):
+│   │                       # - CREATE TABLE IF NOT EXISTS for all 6 tables
+│   │                       # - Seeds 12 sample hotels if the hotels table is empty
+│   │                       # - Seeds 4 room types per hotel with tiered pricing
+│   │
+│   └── routes/
+│       │
+│       ├── auth.js         # Authentication routes:
+│       │                   # POST /api/auth/register — create guest or owner account
+│       │                   # POST /api/auth/login    — verify password, start session
+│       │                   # POST /api/auth/logout   — destroy session
+│       │                   # GET  /api/auth/me       — return current user from session
+│       │
+│       ├── hotels.js       # Hotel routes:
+│       │                   # GET /api/hotels         — list active hotels
+│       │                   #   supports ?q= (name/city/country) and ?city= filters
+│       │                   # GET /api/hotels/:id     — single hotel with rooms
+│       │                   # Each hotel response includes real Unsplash cover image,
+│       │                   # gallery photos, and per-room-category images.
+│       │
+│       ├── bookings.js     # Booking routes (auth required):
+│       │                   # POST /api/bookings            — create booking
+│       │                   # GET  /api/bookings/me         — list user's bookings
+│       │                   # POST /api/bookings/:id/cancel — cancel upcoming booking
+│       │                   # Validates dates, prevents past check-in and double cancel.
+│       │
+│       ├── owner.js        # Owner routes (owner role required):
+│       │                   # POST   /api/owner/properties      — create hotel + rooms
+│       │                   # GET    /api/owner/properties      — list owner's hotels
+│       │                   # DELETE /api/owner/properties/:id  — delete hotel + rooms
+│       │                   # GET    /api/analytics/dashboard   — revenue & occupancy
+│       │
+│       └── ai.js           # AI concierge route:
+│                           # POST /api/ai/concierge
+│                           # Builds system prompt from live hotel data in DB.
+│                           # Forwards request to Groq/OpenAI-compatible API.
+│                           # Returns response in same language as user's message.
+│                           # Logs conversation to chats table for auth users.
+│
+├── package.json            # Dependencies: express, pg, bcryptjs, cors,
+│                           # express-session, connect-pg-simple, dotenv
+│
+└── render.yaml             # Render.com deployment config:
+                            # build: npm install
+                            # start: node src/initDb.js && node src/index.js
+```
 
+---
 
+## 🗄️ Database Schema
 
+Six tables are created automatically on first run:
 
+| Table | Purpose | Key Columns |
+|---|---|---|
+| `users` | Guest and owner accounts | `id`, `email`, `password_hash`, `name`, `role` (guest\|owner) |
+| `hotels` | Hotel listings | `id`, `owner_id`, `name`, `city`, `stars`, `price_from`, `amenities` (JSONB) |
+| `rooms` | Room types per hotel | `id`, `hotel_id`, `category`, `price`, `capacity`, `quantity`, `bed_type` |
+| `bookings` | Guest reservations | `id`, `user_id`, `hotel_id`, `check_in`, `check_out`, `total`, `status` |
+| `sessions` | Server-side sessions | `sid`, `sess` (JSON), `expire` — managed by connect-pg-simple |
+| `chats` | AI conversation log | `id`, `user_id`, `message`, `response` |
 
+---
 
-## API Endpoints
+## 🔌 API Endpoints
 
-### Public
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET    | `/api/hotels` | List all active hotels (supports `?q=` and `?city=`) |
-| GET    | `/api/hotels/:id` | Get a single hotel with its rooms |
-| GET    | `/api/healthz` | Health check |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | — | Create guest or owner account |
+| POST | `/api/auth/login` | — | Login and receive session + token |
+| POST | `/api/auth/logout` | — | Destroy session |
+| GET | `/api/auth/me` | ✓ | Get current authenticated user |
+| GET | `/api/hotels` | — | List all active hotels (supports `?q=` and `?city=`) |
+| GET | `/api/hotels/:id` | — | Get hotel details with room types and images |
+| POST | `/api/bookings` | ✓ | Create a new booking |
+| GET | `/api/bookings/me` | ✓ | List current user's bookings |
+| POST | `/api/bookings/:id/cancel` | ✓ | Cancel an upcoming booking |
+| POST | `/api/owner/properties` | Owner | Create hotel listing with rooms |
+| GET | `/api/owner/properties` | Owner | List owner's hotels |
+| DELETE | `/api/owner/properties/:id` | Owner | Delete hotel and all its rooms |
+| GET | `/api/analytics/dashboard` | Owner | Revenue, occupancy, and booking metrics |
+| POST | `/api/ai/concierge` | — | Send message to AI concierge |
+| GET | `/api/healthz` | — | Health check |
 
-### Authentication (guests & owners)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST   | `/api/auth/register` | Create a new account (role: `guest` or `owner`) |
-| POST   | `/api/auth/login`    | Login, sets a session cookie and returns a signed token |
-| POST   | `/api/auth/logout`   | Destroy the session |
-| GET    | `/api/auth/me`       | Get the currently authenticated user |
+---
 
-### Bookings (authenticated guests)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST   | `/api/bookings` | Create a new booking |
-| GET    | `/api/bookings` | List all bookings of the logged‑in user |
-| POST   | `/api/bookings/:id/cancel` | Cancel a booking (optional `reason` in request body) |
+## 🚀 Setup & Deployment
 
-### Owner Routes (owner role required)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST   | `/api/owner/properties` | Add a new hotel with its rooms |
-| GET    | `/api/owner/properties` | List all hotels owned by the authenticated owner |
-| DELETE | `/api/owner/properties/:id` | Delete a hotel and all its rooms |
-| GET    | `/api/analytics/dashboard` | Get aggregated revenue, bookings, occupancy, and booking pace |
+### Frontend — GitHub Pages
 
-### AI Concierge
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST   | `/api/ai/concierge` | Send a chat message (with conversation history) and receive an AI reply plus an optional action |
+1. Create a **public** repository on GitHub and upload all frontend files
+2. Go to **Settings → Pages → Source: main branch / root**
+3. Open every `.js` file and set the API base URL on the first line:
 
-## Setup for Development
+```js
+const API_BASE = 'https://your-backend.onrender.com/api';
+```
 
-1. **Clone the repository**  
-   ```bash
-   git clone https://github.com/wyagoubi/aurum-backend.git
-   cd aurum-backend
+### Backend — Render.com
 
+1. Push the backend folder to a **private** GitHub repository
+2. On Render.com, create a new **Web Service** and connect the repo
+3. Set **Build Command:** `npm install`
+4. Set **Start Command:** `node src/initDb.js && node src/index.js`
+5. Create a **PostgreSQL** database on Render — the `DATABASE_URL` is set automatically
+
+### Environment Variables
+
+| Key | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (auto-set by Render) |
+| `SESSION_SECRET` | Long random string for signing session cookies |
+| `OPENAI_API_KEY` | API key for Groq or any OpenAI-compatible provider |
+| `OPENAI_BASE_URL` | Base URL of the AI provider (e.g. `https://api.groq.com/openai/v1`) |
+| `OPENAI_MODEL` | Model name (e.g. `llama-3.1-8b-instant`) |
+| `ALLOWED_ORIGINS` | Frontend origin for CORS (e.g. `https://wyagoubi.github.io`) |
+
+---
+
+## 👥 Team — G08
+
+| Member | Role |
+|---|---|
+| Yagoubi Walaa Hadj Mahmoud Taki Eddine | Frontend-backend integration, CORS & auth, AI concierge, bug fixing |
+| Belakhdar Mohamed Yacine | JavaScript logic |
+| Abderrahmane Boussekar | HTML structure, CSS styling, responsive design, dark/light theme |
+| Guibadj Abdellah Younes Tamim | Node.js backend, Express routes, session management |
+| Zidelkheir Hadj | Database schema, SQL queries |
+
+**Teacher:** Dr. Saida Sarra Boudouh — 2025 / 2026
