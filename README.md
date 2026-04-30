@@ -2,9 +2,9 @@
 
 > *"Where Luxury Finds You"*
 
-AURUM is a production-grade, full-stack hotel booking web application built as a university project. It allows guests to discover luxury hotels worldwide, make reservations, and interact with an AI-powered concierge. Hotel owners can list their properties, manage room availability, and track performance through a dedicated analytics dashboard.
+AURUM is a full-stack luxury hotel booking platform designed as a university software engineering project. It combines modern web technologies with relational database principles to deliver an end-to-end reservation system. The application supports guest reservations, hotel owner management tools, and AI-assisted customer interaction.
 
-The frontend is hosted on **GitHub Pages** and communicates with a **Node.js/Express REST API** deployed on **Render.com**, backed by a managed **PostgreSQL** database.
+Its architecture consists of a client-side web interface, a RESTful application layer, and a PostgreSQL database structured through SQL schema definitions and automated initialization scripts (initDb.js), ensuring scalability, consistency, and deployment automation.
 
 ## 🔗 Live Demo
 
