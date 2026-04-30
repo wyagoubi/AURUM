@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* FIXED: Cancel removes booking from list only on successful server response */
+/* FINAL FIX: Reload list after cancel to ensure sync with database */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -127,11 +127,10 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel — يحذف الحجز فقط بعد استجابة ناجحة من الخادم ── */
+/* ── Cancel — إعادة تحميل القائمة بعد النجاح لضمان المزامنة ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
 
-  // حفظ النص الأصلي للزر لاستعادته في حالة الفشل
   const originalText = button.textContent;
   button.disabled = true;
   button.textContent = 'Cancelling...';
@@ -143,29 +142,19 @@ async function cancelBooking(bookingId, button) {
       headers:     { 'Content-Type': 'application/json' },
       body:        JSON.stringify({ reason: '' })
     });
-
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      data = { success: false, error: 'Invalid JSON response' };
-    }
-
-    console.log('[cancel] Response:', res.status, data);
+    const data = await res.json();
+    console.log('[cancel] response:', res.status, data);
 
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
 
-    // ✅ عند النجاح: إزالة الحجز من المصفوفة وإعادة التصيير
-    allBookings = allBookings.filter(b => b.id !== bookingId);
-    renderList();
-    showToast('Reservation cancelled successfully.', 'success');
+    showToast('Reservation cancelled. Refreshing list...', 'success');
+    await load(); // إعادة تحميل القائمة من الخادم
 
   } catch (err) {
     console.error('[cancel] error:', err.message);
     showToast(`Error: ${err.message}`, 'error');
-    // إعادة الزر إلى حالته الأصلية
     button.disabled = false;
     button.textContent = originalText;
   }
@@ -228,7 +217,7 @@ function renderList() {
   }).join('');
 }
 
-/* ── Load ── */
+/* ── Load bookings from server ── */
 async function load() {
   if (!user) {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
@@ -239,7 +228,6 @@ async function load() {
     const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
-      // تحميل جميع الحجوزات (الملغاة وغير الملغاة)
       allBookings = data.data.map(normalizeBooking);
     } else {
       throw new Error(data.error || 'Invalid response');
@@ -263,7 +251,6 @@ filtersEl?.addEventListener('click', e => {
   renderList();
 });
 
-/* ── Event Delegation for Cancel ── */
 listEl.addEventListener('click', e => {
   const btn = e.target.closest('.cancel-btn');
   if (!btn || btn.disabled) return;
