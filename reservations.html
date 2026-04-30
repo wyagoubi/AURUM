@@ -81,24 +81,28 @@
     }
   </script>
 
-  <script>
-    // إخفاء زر Sign In فوراً إذا كان المستخدم مسجلاً
-    (function() {
-      const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
-      const navUser = document.getElementById('navUser');
-      const navUserLogged = document.getElementById('navUserLogged');
-      if (user && user.email) {
-        if (navUser) navUser.classList.add('hidden');
-        if (navUserLogged) navUserLogged.classList.remove('hidden');
-        const avatar = document.getElementById('navAvatar');
-        const usernameSpan = document.getElementById('navUsername');
-        if (avatar) avatar.textContent = user.initials || (user.name ? user.name[0] : 'A').toUpperCase();
-        if (usernameSpan) usernameSpan.textContent = (user.name || 'Guest').split(' ')[0];
-      } else {
-        if (navUser) navUser.classList.remove('hidden');
-        if (navUserLogged) navUserLogged.classList.add('hidden');
-      }
-    })();
-  </script>
+<script>
+  (function() {
+    const user = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+    const navUser = document.getElementById('navUser');
+    const navUserLogged = document.getElementById('navUserLogged');
+    if (user && user.email) {
+      // إخفاء زر Sign In
+      if (navUser) navUser.style.display = 'none';
+      // إظهار قسم المستخدم المسجل
+      if (navUserLogged) navUserLogged.style.display = 'flex';
+      // تحديث الصورة الرمزية والاسم
+      const avatar = document.getElementById('navAvatar');
+      const usernameSpan = document.getElementById('navUsername');
+      if (avatar) avatar.textContent = user.initials || (user.name ? user.name[0] : 'A').toUpperCase();
+      if (usernameSpan) usernameSpan.textContent = (user.name || 'Guest').split(' ')[0];
+    } else {
+      // إظهار زر Sign In
+      if (navUser) navUser.style.display = 'flex';
+      // إخفاء قسم المستخدم المسجل
+      if (navUserLogged) navUserLogged.style.display = 'none';
+    }
+  })();
+</script>
 </body>
 </html>
