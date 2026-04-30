@@ -160,10 +160,11 @@
   border-radius: 999px;
   border: 1px solid currentColor;
 }
-.res-status.upcoming { color: #d8c890; }
-.res-status.past { color: #6e7480; }
+.res-status.upcoming  { color: #d8c890; }
+.res-status.past      { color: #6e7480; }
 .res-status.cancelled { color: #c46c6c; }
 .res-status.confirmed { color: #b8d8a8; }
+.res-status.current   { color: #a8d8a8; }
 
 .res-hotel-name {
   font-family: 'Cormorant Garamond', serif;
@@ -240,8 +241,11 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: all .25s ease;
+  text-decoration: none;
+  display: inline-block;
 }
 .btn-ghost:hover { background: rgba(201,169,97,.08); border-color: var(--gold, #c9a961); }
+
 .btn-danger {
   background: transparent;
   border: 1px solid rgba(196, 108, 108, 0.55);
@@ -255,8 +259,23 @@
   cursor: pointer;
   transition: all .25s ease;
 }
-.btn-danger:hover { background: rgba(196,108,108,.12); color: #f1b3b3; }
+.btn-danger:hover  { background: rgba(196,108,108,.12); color: #f1b3b3; }
 .btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Cancelled Badge — كان مفقوداً وهذا سبب ظهور "Cancelled" كنص عادي ── */
+.cancelled-badge {
+  display: inline-block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c46c6c;
+  border: 1px solid rgba(196, 108, 108, 0.45);
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(196, 108, 108, 0.08);
+  white-space: nowrap;
+}
 
 /* States */
 .res-state {
@@ -269,14 +288,16 @@
   font-style: italic;
   font-size: 18px;
 }
-.res-state-title {
+.res-state h3 {
   font-family: 'Cormorant Garamond', serif;
   font-style: normal;
   font-size: 28px;
   color: var(--text, #e9e3d4);
   margin: 0 0 8px;
 }
+.res-state p { margin: 0 0 6px; }
 .res-state .btn-ghost { margin-top: 22px; }
+
 .res-spinner {
   width: 38px; height: 38px;
   border-radius: 50%;
@@ -306,31 +327,7 @@
 }
 .cancel-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-/* Light mode */
-body.light-mode .res-search input { background: #fff; border-color: #e6dfcd; color: #2a2418; }
-body.light-mode .res-card { background: #fff; border-color: #ece4cf; }
-body.light-mode .res-card:hover { box-shadow: 0 16px 50px rgba(150, 120, 60, .15); }
-body.light-mode .res-state { background: #fff; }
-
-/* Mobile */
-@media (max-width: 860px) {
-  .res-page { padding: 100px 20px 60px; }
-  .res-card { grid-template-columns: 1fr; }
-  .res-card-art { min-height: 130px; }
-  .res-card-side {
-    border-left: none;
-    border-top: 1px solid rgba(201, 169, 97, 0.08);
-    flex-direction: row;
-    align-items: center;
-    padding: 18px 22px;
-  }
-  .res-detail-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-  .res-card-body { padding: 22px 22px 4px; }
-  .res-toolbar { flex-direction: column; align-items: stretch; }
-  .res-filters { justify-content: flex-start; }
-}
-
-/* ── New elements ── */
+/* New elements */
 .res-card-art-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55));
@@ -364,4 +361,33 @@ body.light-mode .res-state { background: #fff; }
   background: rgba(224,168,74,0.12);
   border-color: rgba(224,168,74,0.3);
 }
-.res-status.current { color: #a8d8a8; }
+
+/* Light mode */
+body.light-mode .res-search input { background: #fff; border-color: #e6dfcd; color: #2a2418; }
+body.light-mode .res-card { background: #fff; border-color: #ece4cf; }
+body.light-mode .res-card:hover { box-shadow: 0 16px 50px rgba(150, 120, 60, .15); }
+body.light-mode .res-state { background: #fff; }
+body.light-mode .cancelled-badge {
+  color: #a84040;
+  border-color: rgba(168, 64, 64, 0.4);
+  background: rgba(168, 64, 64, 0.06);
+}
+
+/* Mobile */
+@media (max-width: 860px) {
+  .res-page { padding: 100px 20px 60px; }
+  .res-card { grid-template-columns: 1fr; }
+  .res-card-art { min-height: 130px; }
+  .res-card-side {
+    border-left: none;
+    border-top: 1px solid rgba(201, 169, 97, 0.08);
+    flex-direction: row;
+    align-items: center;
+    padding: 18px 22px;
+    min-width: unset;
+  }
+  .res-detail-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .res-card-body { padding: 22px 22px 4px; }
+  .res-toolbar { flex-direction: column; align-items: stretch; }
+  .res-filters { justify-content: flex-start; }
+}
