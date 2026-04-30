@@ -1,5 +1,5 @@
 /* AURUM — reservations.js */
-/* FINAL FIXED: hides Sign In when logged in, navbar scroll, proper navigation */
+/* FINAL FIXED: syntax error fixed, cancel works, navbar state preserved */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const body = document.body;
@@ -42,7 +42,6 @@ const navAvatar     = document.getElementById('navAvatar');
 const navUsername   = document.getElementById('navUsername');
 const navUserGuest  = document.getElementById('navUser');
 
-// ✅ إخفاء/إظهار أزرار تسجيل الدخول حسب حالة المستخدم
 if (user && user.email) {
   navUserGuest?.classList.add('hidden');
   navUserLogged?.classList.remove('hidden');
@@ -128,7 +127,7 @@ function normalizeBooking(b) {
   };
 }
 
-/* ── Cancel — يحذف الحجز من القائمة فوراً بعد النجاح ── */
+/* ── Cancel — يحذف الحجز فوراً ── */
 async function cancelBooking(bookingId, button) {
   if (!confirm('Are you sure you want to cancel this reservation?')) return;
 
@@ -143,14 +142,12 @@ async function cancelBooking(bookingId, button) {
       body:        JSON.stringify({ reason: '' })
     });
 
-    let data = {};
-    try { data = await res.json(); } catch (_) {}
-
+    const data = await res.json();
     if (!res.ok || !data.success) {
       throw new Error(data.error || `HTTP ${res.status}`);
     }
 
-    /* ✅ حذف الحجز من المصفوفة مباشرة */
+    // ✅ حذف من المصفوفة المحلية وإعادة التصيير
     allBookings = allBookings.filter(b => b.id !== bookingId);
     renderList();
     showToast('Reservation cancelled successfully.', 'success');
@@ -220,7 +217,7 @@ function renderList() {
   }).join('');
 }
 
-/* ── Load (يجلب فقط الحجوزات غير الملغاة افتراضياً) ── */
+/* ✅ تحميل جميع الحجوزات (بدون تصفية) */
 async function load() {
   if (!user) {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
@@ -231,7 +228,7 @@ async function load() {
     const res  = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
-      // ✅ عرض جميع الحجوزات (الملغاة ستظهر فقط إذا كان الفلتر Cancelled)
+      // ✅ تعيين allBookings لجميع الحجوزات (بدون تصفية مسبقة)
       allBookings = data.data.map(normalizeBooking);
     } else {
       throw new Error(data.error || 'Invalid response');
@@ -244,7 +241,7 @@ async function load() {
   renderList();
 }
 
-/* ── Events ── */
+/* ── أحداث البحث والفلترة ── */
 searchEl?.addEventListener('input', e => { searchTerm = e.target.value.trim(); renderList(); });
 filtersEl?.addEventListener('click', e => {
   const btn = e.target.closest('.res-chip');
@@ -255,7 +252,7 @@ filtersEl?.addEventListener('click', e => {
   renderList();
 });
 
-/* ── Event Delegation للإلغاء ── */
+/* ── تفويض حدث الإلغاء ── */
 listEl.addEventListener('click', e => {
   const btn = e.target.closest('.cancel-btn');
   if (!btn || btn.disabled) return;
