@@ -239,15 +239,28 @@ function updateFilterUI() {
   });
 }
 
+
 /* ── Load bookings from server ── */
 async function load() {
   if (!user) {
     listEl.innerHTML = `<div class="res-state"><h3>Please sign in</h3><a class="btn-ghost" href="auth.html">Sign in</a></div>`;
     return;
   }
+  
+  // عرض رسالة التحميل
   listEl.innerHTML = '<div class="res-state"><div class="res-spinner"></div><p>Loading reservations...</p></div>';
+  
+  // إضافة مهلة 5 ثوانٍ
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  
   try {
-    const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/bookings`, { 
+      credentials: 'include',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) {
       allBookings = data.data.map(normalizeBooking);
@@ -257,10 +270,20 @@ async function load() {
   } catch (err) {
     console.error('[load] error:', err.message);
     allBookings = [];
+    
+    if (err.name === 'AbortError') {
+      showToast('Request timeout. Please check your connection.', 'error');
+      listEl.innerHTML = `<div class="res-state"><h3>Connection timeout</h3><p>Please refresh the page and try again.</p><a class="btn-ghost" href="javascript:location.reload()">Refresh</a></div>`;
+      return;
+    }
+    
     showToast('Failed to load reservations. Check connection.', 'error');
+    listEl.innerHTML = `<div class="res-state"><h3>Could not load reservations</h3><p>Please try again later.</p><a class="btn-ghost" href="javascript:load()">Retry</a></div>`;
+    return;
   }
+  
   renderList();
-  updateFilterUI();  // تأكيد الزر النشط بعد التحميل
+  updateFilterUI();
 }
 
 /* ── Events ── */
