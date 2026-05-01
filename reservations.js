@@ -143,8 +143,9 @@ async function cancelBooking(bookingId, button) {
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
 
-    // إعادة تحميل القائمة بالكامل
-    await load();
+    // ✅ تحديث محلي (أسرع، ولا حاجة لـ load())
+    allBookings = allBookings.filter(b => b.id !== bookingId);
+    renderList();
     showToast('Reservation cancelled successfully.', 'success');
   } catch (err) {
     console.error('[cancel] error:', err.message);
