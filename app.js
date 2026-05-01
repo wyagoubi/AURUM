@@ -1,19 +1,15 @@
 /* ═══════════════════════════════════════════════
    AURUM — STABLE LOCAL VERSION (NO API FAILURE)
-   All hotels, images, galleries built-in.
-   FIXED: page persistence via URL parameter, executeAiAction added
+   FIXED: unified authentication with token, booking works on all devices
 ═══════════════════════════════════════════════ */
 
-// ================== API CONFIG (LOCAL ONLY) ==================
-// No external API calls for hotels – local database only.
-// Booking & AI still use API_BASE.
+// ================== API CONFIG ==================
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 
 /* ══════════ THEME ══════════ */
 const body = document.body;
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon   = document.getElementById('themeIcon');
-
 const savedTheme = localStorage.getItem('aurum-theme') || 'dark-mode';
 body.className = savedTheme;
 setThemeIcon(savedTheme);
@@ -70,6 +66,7 @@ const pages    = document.querySelectorAll('.page');
 const navLinks = document.querySelectorAll('.nav-link');
 
 window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40));
+
 function showPage(id) {
   pages.forEach(p => p.classList.remove('active'));
   navLinks.forEach(l => l.classList.remove('active'));
@@ -82,18 +79,14 @@ function showPage(id) {
   navLinks.forEach(l => { if (l.dataset.page === id) l.classList.add('active'); });
   document.querySelector('.nav-links')?.classList.remove('mobile-open');
 
-  // تحديث عنوان URL
   const newUrl = new URL(window.location.href);
   newUrl.searchParams.set('page', id);
   window.history.pushState({}, '', newUrl);
 
-  // ✅ عند العودة إلى الصفحة الرئيسية: مسح حقل الوجهة
   if (id === 'home') {
     const locationInput = document.getElementById('s-location');
     if (locationInput) locationInput.value = '';
   }
-
-  // ✅ عند الدخول إلى صفحة النتائج: إعادة البحث بناءً على حقل الوجهة الحالي
   if (id === 'results') {
     const location = document.getElementById('s-location')?.value.trim() || '';
     const rooms = parseInt(document.getElementById('s-rooms')?.value) || 1;
@@ -120,10 +113,9 @@ navLinks.forEach(link => {
   });
 });
 
-/* ══════════ LOCAL HOTEL DATABASE (FULLY POPULATED, NO API) ══════════ */
+/* ══════════ LOCAL HOTEL DATABASE (12 HOTELS) ══════════ */
 let hotelDatabase = [];
 
-// ----- IMAGE MAPS (all 12 hotels matching names) -----
 const HOTEL_COVERS = {
   'Le Grand Aurum Paris':    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80',
   'Aurum Palace London':     'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80',
@@ -201,7 +193,6 @@ function buildLocalDatabase() {
   window._hotelsData = hotelDatabase;
 }
 
-// مباشرة دون محاولة API
 function loadHotels() {
   buildLocalDatabase();
   renderResults(filterHotels('', 1, 0, 'any'), '', 1, 0, 'any');
@@ -348,7 +339,7 @@ document.querySelectorAll('.featured-card').forEach(card => {
   });
 });
 
-/* ══════════ GALLERY MODAL (مختصر) ══════════ */
+/* ══════════ GALLERY MODAL (unchanged) ══════════ */
 let galHotel = null, galTab = 'hotel', galIndex = 0;
 const galleryModal = document.getElementById('galleryModal');
 const galleryBackdrop = document.getElementById('galleryBackdrop');
@@ -436,10 +427,15 @@ const bookingBackdrop = document.getElementById('bookingBackdrop');
 let _currentBookingHotel = null;
 let userBookings = [];
 
+// ✅ إضافة التوكن إلى طلب جلب الحجوزات
 async function fetchUserBookings() {
   if (!currentUser) return [];
+  const token = localStorage.getItem('aurum-token');
   try {
-    const res = await fetch(`${API_BASE}/bookings`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/bookings`, {
+      credentials: 'include',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
     const data = await res.json();
     if (data.success && Array.isArray(data.data)) userBookings = data.data;
     else userBookings = [];
@@ -568,6 +564,8 @@ document.getElementById('confirmBooking')?.addEventListener('click', () => {
   if (ps?.classList.contains('hidden')) { ps.classList.remove('hidden'); setTimeout(()=>document.getElementById('payName')?.focus(),120); return; }
   document.getElementById('payConfirmBtn')?.click();
 });
+
+// ✅ دالة الدفع المصححة بالكامل (مع التوكن)
 const payConfirm = document.getElementById('payConfirmBtn');
 if (payConfirm) {
   payConfirm.addEventListener('click', async () => {
@@ -576,30 +574,51 @@ if (payConfirm) {
     const exp = document.getElementById('payExp')?.value.trim() || '';
     const cvc = document.getElementById('payCvc')?.value.trim() || '';
     if (!name || !number || !exp || !cvc) { showToast('Complete payment details','error'); return; }
+
     const cin = document.getElementById('bookingCheckin')?.value;
     const cout = document.getElementById('bookingCheckout')?.value;
     const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
     if (!cin || !cout || !_currentBookingHotel) { showToast('Missing booking details','error'); return; }
-    payConfirm.disabled = true; payConfirm.textContent = 'Processing…';
+
+    payConfirm.disabled = true;
+    payConfirm.textContent = 'Processing…';
     try {
-      const nights = Math.round((new Date(cout)-new Date(cin))/(86400000));
+      const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
       const last4 = number.slice(-4);
       const totalPrice = _currentBookingHotel.price * nights * rooms;
       const roomType = document.getElementById('bookingRoomType')?.value || 'Deluxe Room';
-      const res = await fetch(`${API_BASE}/bookings`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+      const token = localStorage.getItem('aurum-token');
+
+      const response = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
         body: JSON.stringify({
-          hotelId: _currentBookingHotel.id, roomType, rooms, guests: rooms*2,
-          checkIn: cin, checkOut: cout, pricePerNight: _currentBookingHotel.price,
-          paymentMethod: 'card', paymentLast4: last4,
-          guestName: currentUser?.name || name, guestEmail: currentUser?.email || '',
+          hotelId: _currentBookingHotel.id,
+          roomType,
+          rooms,
+          guests: rooms * 2,
+          checkIn: cin,
+          checkOut: cout,
+          pricePerNight: _currentBookingHotel.price,
+          paymentMethod: 'card',
+          paymentLast4: last4,
+          guestName: currentUser?.name || name,
+          guestEmail: currentUser?.email || '',
         })
       });
-      const data = await res.json();
+      const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Booking failed');
       closeBooking();
       showToast(`✔ Confirmed! Total: $${totalPrice.toLocaleString()}`, 'success');
-      if (currentUser) { await fetchUserBookings(); updateAllBookingBadges(); checkUpcomingBookings(); }
+      if (currentUser) {
+        await fetchUserBookings();
+        updateAllBookingBadges();
+        checkUpcomingBookings();
+      }
       setTimeout(() => {
         const t = document.createElement('div');
         t.textContent = '→ VIEW MY RESERVATIONS';
@@ -608,10 +627,15 @@ if (payConfirm) {
         document.body.appendChild(t);
         setTimeout(()=>t.remove(),5000);
       },500);
-    } catch(err) { showToast(err.message,'error'); }
-    finally { payConfirm.disabled = false; payConfirm.textContent = 'Pay & Confirm'; }
+    } catch(err) {
+      showToast(err.message, 'error');
+    } finally {
+      payConfirm.disabled = false;
+      payConfirm.textContent = 'Pay & Confirm';
+    }
   });
 }
+
 function showSideSigninTip(button, hotel, msg) {
   const tip = document.createElement('div');
   tip.id = 'signinTip';
@@ -629,7 +653,7 @@ function showSideSigninTip(button, hotel, msg) {
   setTimeout(() => tip.remove(), 4000);
 }
 
-/* ══════════ AI CONCIERGE (مختصر بدون ازدواجية) ══════════ */
+/* ══════════ AI CONCIERGE (مختصر) ══════════ */
 const aiModal = document.getElementById('aiModal');
 const aiMessages = document.getElementById('aiMessages');
 const aiInput = document.getElementById('aiInput');
@@ -717,7 +741,7 @@ document.getElementById('openAiChat')?.addEventListener('click', () => { if (aiM
 document.getElementById('aiFab')?.addEventListener('click', () => { if (aiModal) aiModal.classList.add('open'); setTimeout(()=>aiInput?.focus(),100); loadChatHistory(); });
 document.getElementById('aiClose')?.addEventListener('click', () => { if (aiModal) aiModal.classList.remove('open'); });
 document.getElementById('aiClear')?.addEventListener('click', () => { if(confirm('Clear chat?')) { window._aiHistory = []; localStorage.removeItem(getChatStorageKey()); loadChatHistory(); } });
-// Minimize & dragging simplified
+// Minimize & dragging
 const aiWindow = document.getElementById('aiWindow');
 if(aiWindow) {
   const dragHandle = document.getElementById('aiDragHandle');
@@ -833,7 +857,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // NEW: Handle page parameter from URL (for returning from reservations.html etc.)
   const urlParams = new URLSearchParams(window.location.search);
   const pageParam = urlParams.get('page');
   if (pageParam === 'home') {
@@ -841,12 +864,10 @@ window.addEventListener('DOMContentLoaded', () => {
   } else if (pageParam === 'results') {
     showPage('results');
   } else {
-    // Default to home
     showPage('home');
   }
 });
 
-// Owner dashboard link
 const userRole = JSON.parse(localStorage.getItem('aurum-user') || 'null');
 if (userRole && userRole.role === 'owner') {
   const loggedDiv = document.getElementById('navUserLogged');
