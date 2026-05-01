@@ -427,8 +427,16 @@ const bookingBackdrop = document.getElementById('bookingBackdrop');
 let _currentBookingHotel = null;
 let userBookings = [];
 
-// ================== FETCH USER BOOKINGS ==================
+// تحديث حالة المستخدم من localStorage
+function refreshCurrentUser() {
+  currentUser = JSON.parse(localStorage.getItem('aurum-user') || 'null');
+  return currentUser;
+}
+
+// جلب الحجوزات
 async function fetchUserBookings() {
+  refreshCurrentUser();   // مهم جداً
+
   if (!currentUser) {
     userBookings = [];
     return [];
@@ -436,7 +444,7 @@ async function fetchUserBookings() {
 
   const token = localStorage.getItem('aurum-token');
   if (!token) {
-    console.warn("⚠️ No authentication token found");
+    console.warn("No token found");
     userBookings = [];
     return [];
   }
@@ -452,22 +460,16 @@ async function fetchUserBookings() {
     });
 
     if (res.status === 401) {
-      console.error("❌ Token expired or invalid");
       localStorage.removeItem('aurum-token');
       localStorage.removeItem('aurum-user');
       currentUser = null;
       updateNav();
       showToast('Session expired. Please sign in again.', 'error');
-      userBookings = [];
       return [];
     }
 
     const data = await res.json();
-    if (data.success && Array.isArray(data.data)) {
-      userBookings = data.data;
-    } else {
-      userBookings = [];
-    }
+    userBookings = (data.success && Array.isArray(data.data)) ? data.data : [];
   } catch (err) {
     console.error('Error fetching bookings:', err);
     userBookings = [];
@@ -475,7 +477,7 @@ async function fetchUserBookings() {
   return userBookings;
 }
 
-// ================== GET BOOKING STATUS ==================
+// حالة الحجز للفندق
 function getHotelBookingStatus(hotelId) {
   if (!userBookings || !userBookings.length) return null;
 
@@ -488,21 +490,19 @@ function getHotelBookingStatus(hotelId) {
   const checkIn = new Date(booking.check_in + 'T00:00:00Z');
   const checkOut = new Date(booking.check_out + 'T00:00:00Z');
 
-  if (checkOut < today) {
-    return { text: 'Completed', class: 'completed' };
-  }
+  if (checkOut < today) return { text: 'Completed', class: 'completed' };
   if (checkIn <= today && checkOut >= today) {
-    const nightsLeft = Math.round((checkOut - today) / (1000 * 3600 * 24));
+    const nightsLeft = Math.round((checkOut - today) / (1000*3600*24));
     return { text: `Current stay · ${nightsLeft} night${nightsLeft !== 1 ? 's' : ''} left`, class: 'current' };
   }
   if (checkIn > today) {
-    const daysLeft = Math.round((checkIn - today) / (1000 * 3600 * 24));
+    const daysLeft = Math.round((checkIn - today) / (1000*3600*24));
     return { text: `Booked · starts in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, class: 'upcoming' };
   }
   return { text: 'Completed', class: 'completed' };
 }
 
-// ================== UPDATE ALL BOOKING BADGES ==================
+// تحديث الشارات على كروت الفنادق
 async function updateAllBookingBadges() {
   if (!currentUser) return;
   await fetchUserBookings();
@@ -532,9 +532,9 @@ async function updateAllBookingBadges() {
         bookBtn.textContent = 'View My Stay';
         const newBtn = bookBtn.cloneNode(true);
         bookBtn.parentNode.replaceChild(newBtn, bookBtn);
-        newBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.location.href = 'reservations.html';
+        newBtn.addEventListener('click', (e) => { 
+          e.stopPropagation(); 
+          window.location.href = 'reservations.html'; 
         });
       }
     } else {
@@ -554,6 +554,177 @@ async function updateAllBookingBadges() {
       }
     }
   });
+}
+
+// فتح نافذة الحجز
+function openBookingModal(hotel) {
+  refreshCurrentUser();
+
+  if (!currentUser) {
+    showSideSigninTip(document.body, hotel, 'Please sign in to make a booking');
+    return;
+  }
+
+  _currentBookingHotel = hotel;
+
+  document.getElementById('modalHotelName').textContent = hotel.name;
+  document.getElementById('modalHotelLoc').textContent = `${hotel.city}, ${hotel.country}`;
+  document.getElementById('summaryRate').textContent = `$${hotel.price}/night`;
+
+  const tomorrow = new Date(); 
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(); 
+  nextWeek.setDate(nextWeek.getDate() + 7);
+
+  document.getElementById('bookingCheckin').value = tomorrow.toISOString().split('T')[0];
+  document.getElementById('bookingCheckout').value = nextWeek.toISOString().split('T')[0];
+
+  updateSummary(hotel.price);
+
+  const paySection = document.getElementById('paymentSection');
+  if (paySection) paySection.classList.add('hidden');
+
+  bookingModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// دالة الدفع الرئيسية
+const payConfirm = document.getElementById('payConfirmBtn');
+if (payConfirm) {
+  payConfirm.addEventListener('click', async () => {
+    refreshCurrentUser();
+
+    if (!currentUser) {
+      showToast('Please sign in first', 'error');
+      return;
+    }
+
+    const name = document.getElementById('payName')?.value.trim() || '';
+    const number = document.getElementById('payNumber')?.value.replace(/\s/g,'') || '';
+    const exp = document.getElementById('payExp')?.value.trim() || '';
+    const cvc = document.getElementById('payCvc')?.value.trim() || '';
+
+    if (!name || !number || !exp || !cvc) {
+      showToast('Please complete payment details', 'error');
+      return;
+    }
+
+    const cin = document.getElementById('bookingCheckin')?.value;
+    const cout = document.getElementById('bookingCheckout')?.value;
+    const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
+
+    if (!cin || !cout || !_currentBookingHotel) {
+      showToast('Missing booking details', 'error');
+      return;
+    }
+
+    const token = localStorage.getItem('aurum-token');
+    if (!token) {
+      showToast('Please sign in first', 'error');
+      return;
+    }
+
+    payConfirm.disabled = true;
+    payConfirm.textContent = 'Processing...';
+
+    try {
+      const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
+      const last4 = number.slice(-4);
+      const totalPrice = _currentBookingHotel.price * nights * rooms;
+      const roomType = document.getElementById('bookingRoomType')?.value || 'Deluxe Room';
+
+      const response = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          hotelId: _currentBookingHotel.id,
+          roomType,
+          rooms,
+          guests: rooms * 2,
+          checkIn: cin,
+          checkOut: cout,
+          pricePerNight: _currentBookingHotel.price,
+          paymentMethod: 'card',
+          paymentLast4: last4,
+          guestName: currentUser?.name || name,
+          guestEmail: currentUser?.email || '',
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) throw new Error(data.error || 'Booking failed');
+
+      closeBooking();
+      showToast(`✔ Booking Confirmed! Total: $${totalPrice.toLocaleString()}`, 'success');
+
+      await fetchUserBookings();
+      await updateAllBookingBadges();
+
+    } catch (err) {
+      showToast(err.message || 'Booking failed', 'error');
+    } finally {
+      payConfirm.disabled = false;
+      payConfirm.textContent = 'Pay & Confirm';
+    }
+  });
+}
+
+// باقي الدوال المساعدة
+function updateSummary(rate) {
+  const cin = document.getElementById('bookingCheckin')?.value;
+  const cout = document.getElementById('bookingCheckout')?.value;
+  const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
+  if (cin && cout && new Date(cout) > new Date(cin)) {
+    const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
+    const nightsSpan = document.getElementById('summaryNights');
+    const totalSpan = document.getElementById('summaryTotal');
+    if (nightsSpan) nightsSpan.textContent = nights;
+    if (totalSpan) totalSpan.textContent = '$' + (nights * rate * rooms).toLocaleString();
+  }
+}
+
+document.getElementById('bookingClose')?.addEventListener('click', closeBooking);
+bookingBackdrop?.addEventListener('click', closeBooking);
+
+function closeBooking() {
+  if (bookingModal) bookingModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('confirmBooking')?.addEventListener('click', () => {
+  if (!document.getElementById('bookingCheckin')?.value || !document.getElementById('bookingCheckout')?.value) {
+    showToast('Please select dates', 'error');
+    return;
+  }
+  const ps = document.getElementById('paymentSection');
+  if (ps?.classList.contains('hidden')) {
+    ps.classList.remove('hidden');
+    setTimeout(() => document.getElementById('payName')?.focus(), 120);
+    return;
+  }
+  document.getElementById('payConfirmBtn')?.click();
+});
+
+function showSideSigninTip(button, hotel, msg) {
+  const tip = document.createElement('div');
+  tip.id = 'signinTip';
+  tip.className = 'signin-tip signin-tip--alert';
+  tip.innerHTML = `<div class="signin-tip-body"><div class="signin-tip-msg">${msg || 'Please sign in to continue'}</div></div>`;
+  document.body.appendChild(tip);
+  const rect = button.getBoundingClientRect();
+  tip.style.position = 'absolute';
+  tip.style.zIndex = 9999;
+  tip.style.left = `${rect.right + 20}px`;
+  tip.style.top = `${rect.top + (rect.height/2) - 20}px`;
+  setTimeout(() => tip.classList.add('show'), 10);
+  tip.style.cursor = 'pointer';
+  tip.onclick = () => window.location.href = 'auth.html';
+  setTimeout(() => tip.remove(), 4000);
 }
 
 // ================== CHECK UPCOMING BOOKINGS ==================
