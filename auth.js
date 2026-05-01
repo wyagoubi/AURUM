@@ -1,6 +1,8 @@
 /* AURUM — auth.js (localStorage-only, no backend required) */
 
 /* ── Storage helpers ── */
+
+const API_BASE = 'https://aurum-m4v8.onrender.com/api';
 const USERS_KEY   = 'aurum-users';
 const SESSION_KEY = 'aurum-user';
 
@@ -240,9 +242,9 @@ function hashPassword(pass) {
 /* ── Guest Login ── */
 const loginBtn = document.getElementById('loginBtn');
 if (loginBtn) {
-  loginBtn.addEventListener('click', () => {
+  loginBtn.addEventListener('click', async () => {
     const email = document.getElementById('loginEmail')?.value.trim() || '';
-    const pass  = document.getElementById('loginPass')?.value || '';
+    const pass = document.getElementById('loginPass')?.value || '';
     clearError('loginEmailErr'); clearError('loginPassErr');
 
     if (!email || !email.includes('@')) {
@@ -256,32 +258,33 @@ if (loginBtn) {
 
     setLoading(loginBtn, true);
 
-    const users = getUsers();
-    const user  = users.find(u => u.email === email && u.role === 'guest');
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // استقبال الجلسة أيضًا
+        body: JSON.stringify({ email, password: pass, expectedRole: 'guest' })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-    setTimeout(() => { // tiny delay for UX feel
-      if (!user) {
-        setLoading(loginBtn, false);
-        setError('loginEmailErr', 'No account found. Please register first.');
-        return;
-      }
-      if (user.password !== hashPassword(pass)) {
-        setLoading(loginBtn, false);
-        setError('loginPassErr', 'Incorrect password.');
-        highlightInvalid('loginPass');
-        return;
-      }
+      const user = data.data.user;
+      // تخزين معلومات المستخدم والتوكن (إذا وجد)
+      localStorage.setItem('aurum-user', JSON.stringify(user));
+      if (user.token) localStorage.setItem('aurum-token', user.token);
 
-      const sessionUser = { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role, initials: user.initials, name: user.name };
-      saveSession(sessionUser);
+      // حفظ الثيم
       localStorage.setItem('aurum-theme', body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode');
       showSuccessOverlay('Welcome back!', 'Redirecting...');
       setTimeout(() => {
-        const p    = new URLSearchParams(window.location.search);
+        const p = new URLSearchParams(window.location.search);
         const next = p.get('nextBooking');
         window.location.href = next ? `index.html?openBooking=${encodeURIComponent(next)}` : 'index.html';
       }, 1500);
-    }, 300);
+    } catch (err) {
+      setLoading(loginBtn, false);
+      setError('loginEmailErr', err.message);
+    }
   });
 }
 
