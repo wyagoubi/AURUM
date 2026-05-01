@@ -33,7 +33,7 @@ if (themeToggle) {
   });
 }
 
-/* ── Role Switcher (نفس الكود السابق، لم يتغير) ── */
+/* ── Role Switcher ── */
 const roleGuest    = document.getElementById('roleGuest');
 const roleOwner    = document.getElementById('roleOwner');
 const guestSection = document.getElementById('guestSection');
@@ -64,7 +64,7 @@ if (roleGuest && roleOwner) {
   if (p.get('role') === 'owner') switchRole('owner');
 })();
 
-/* ── Guest Tabs (نفس الكود) ── */
+/* ── Guest Tabs ── */
 const tabLogin      = document.getElementById('tabLogin');
 const tabRegister   = document.getElementById('tabRegister');
 const loginWrap     = document.getElementById('loginWrap');
@@ -91,7 +91,7 @@ function switchGuestTab(tab) {
   }
 }
 
-/* ── Owner Tabs (نفس الكود) ── */
+/* ── Owner Tabs ── */
 const ownerTabLogin    = document.getElementById('ownerTabLogin');
 const ownerTabRegister = document.getElementById('ownerTabRegister');
 const ownerLoginWrap   = document.getElementById('ownerLoginWrap');
@@ -137,30 +137,30 @@ window.togglePw = function (id, btn) {
   if (btn) btn.style.opacity = show ? '1' : '0.5';
 };
 
-window.checkStrength      = function (val) { applyStrength(val, 'strengthFill',  'strengthLabel');  };
-window.checkOwnerStrength = function (val) { applyStrength(val, 'ownerStrFill',  'ownerStrLabel');  };
+window.checkStrength      = function (val) { applyStrength(val, 'strengthFill', 'strengthLabel'); };
+window.checkOwnerStrength = function (val) { applyStrength(val, 'ownerStrFill', 'ownerStrLabel'); };
 
 function applyStrength(val, fillId, labelId) {
-  const fill  = document.getElementById(fillId);
+  const fill = document.getElementById(fillId);
   const label = document.getElementById(labelId);
   if (!fill || !label) return;
   if (!val) { fill.style.width = '0%'; label.textContent = ''; return; }
   let score = 0;
-  if (val.length >= 8)           score++;
-  if (/[A-Z]/.test(val))         score++;
-  if (/[0-9]/.test(val))         score++;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
   if (/[^A-Za-z0-9]/.test(val)) score++;
   const map = [
-    { w: '20%',  bg: '#e74c3c', txt: 'Weak'   },
-    { w: '45%',  bg: '#e67e22', txt: 'Fair'   },
-    { w: '70%',  bg: '#f1c40f', txt: 'Good'   },
+    { w: '20%', bg: '#e74c3c', txt: 'Weak' },
+    { w: '45%', bg: '#e67e22', txt: 'Fair' },
+    { w: '70%', bg: '#f1c40f', txt: 'Good' },
     { w: '100%', bg: '#2ecc71', txt: 'Strong' },
   ];
   const s = map[score - 1] || map[0];
-  fill.style.width      = s.w;
+  fill.style.width = s.w;
   fill.style.background = s.bg;
-  label.textContent     = s.txt;
-  label.style.color     = s.bg;
+  label.textContent = s.txt;
+  label.style.color = s.bg;
 }
 
 function showMsg(text, type) {
@@ -171,11 +171,11 @@ function showMsg(text, type) {
     el.style.cssText = 'position:fixed;bottom:32px;right:32px;z-index:9999;padding:14px 24px;font-size:12px;letter-spacing:0.5px;border:1px solid;max-width:340px;line-height:1.5;transition:all 0.4s;opacity:0;transform:translateY(10px);font-family:Jost,sans-serif;background:var(--bg2);';
     document.body.appendChild(el);
   }
-  el.textContent       = text;
+  el.textContent = text;
   el.style.borderColor = type === 'error' ? '#e74c3c' : type === 'success' ? '#2ecc71' : 'rgba(201,169,110,0.5)';
-  el.style.color       = type === 'error' ? '#e74c3c' : type === 'success' ? '#2ecc71' : '#c9a96e';
-  el.style.opacity     = '1';
-  el.style.transform   = 'translateY(0)';
+  el.style.color = type === 'error' ? '#e74c3c' : type === 'success' ? '#2ecc71' : '#c9a96e';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
   clearTimeout(window._msgT);
   window._msgT = setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(10px)'; }, 4000);
 }
@@ -200,7 +200,7 @@ function showSuccessOverlay(title, subtitle) {
   let overlay = document.getElementById('successOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
-    overlay.id        = 'successOverlay';
+    overlay.id = 'successOverlay';
     overlay.className = 'success-overlay';
     overlay.innerHTML = `
       <div class="success-content">
@@ -210,18 +210,18 @@ function showSuccessOverlay(title, subtitle) {
             <path d="M14 27l7 7 15-15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="checkmark-check"/>
           </svg>
         </div>
-        <div class="success-text"    id="successText"></div>
+        <div class="success-text" id="successText"></div>
         <div class="success-subtext" id="successSubtext"></div>
       </div>
     `;
     document.body.appendChild(overlay);
   }
-  document.getElementById('successText').textContent    = title    || 'Welcome!';
+  document.getElementById('successText').textContent = title || 'Welcome!';
   document.getElementById('successSubtext').textContent = subtitle || 'Redirecting...';
   requestAnimationFrame(() => overlay.classList.add('show'));
 }
 
-/* ── Guest Login ── (يعمل مع الخادم) */
+/* ── Guest Login ── */
 const loginBtn = document.getElementById('loginBtn');
 if (loginBtn) {
   loginBtn.addEventListener('click', async () => {
@@ -268,7 +268,7 @@ if (loginBtn) {
   });
 }
 
-/* ── Guest Register ── (يتصل بالخادم) */
+/* ── Guest Register ── */
 const registerBtn = document.getElementById('registerBtn');
 if (registerBtn) {
   registerBtn.addEventListener('click', async () => {
@@ -280,7 +280,7 @@ if (registerBtn) {
     const agreed = document.getElementById('agreeTerms')?.checked || false;
 
     let ok = true;
-    ['regFirstErr','regLastErr','regEmailErr','regPassErr','regPass2Err','agreeErr'].forEach(id => clearError(id));
+    ['regFirstErr', 'regLastErr', 'regEmailErr', 'regPassErr', 'regPass2Err', 'agreeErr'].forEach(id => clearError(id));
     if (!first) { setError('regFirstErr', 'First name required.'); ok = false; }
     if (!last) { setError('regLastErr', 'Last name required.'); ok = false; }
     if (!email || !email.includes('@')) { setError('regEmailErr', 'Valid email required.'); ok = false; }
@@ -355,7 +355,7 @@ if (ownerLoginBtn) {
   });
 }
 
-/* ── Owner Register ── (يتصل بالخادم) */
+/* ── Owner Register ── */
 const ownerRegisterBtn = document.getElementById('ownerRegisterBtn');
 if (ownerRegisterBtn) {
   ownerRegisterBtn.addEventListener('click', async () => {
@@ -367,7 +367,7 @@ if (ownerRegisterBtn) {
     const agreed = document.getElementById('ownerAgreeTerms')?.checked || false;
 
     let ok = true;
-    ['ownerFirstErr','ownerLastErr','ownerEmailErr','ownerHotelErr','ownerPassErr','ownerAgreeErr'].forEach(id => clearError(id));
+    ['ownerFirstErr', 'ownerLastErr', 'ownerEmailErr', 'ownerHotelErr', 'ownerPassErr', 'ownerAgreeErr'].forEach(id => clearError(id));
     if (!first) { setError('ownerFirstErr', 'First name required.'); ok = false; }
     if (!last) { setError('ownerLastErr', 'Last name required.'); ok = false; }
     if (!email || !email.includes('@')) { setError('ownerEmailErr', 'Valid email required.'); ok = false; }
