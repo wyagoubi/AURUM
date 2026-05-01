@@ -1,17 +1,8 @@
-/* AURUM — auth.js (localStorage-only, no backend required) */
-
-/* ── Storage helpers ── */
+/* AURUM — auth.js (Backend API based) */
 
 const API_BASE = 'https://aurum-m4v8.onrender.com/api';
-const USERS_KEY   = 'aurum-users';
 const SESSION_KEY = 'aurum-user';
 
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
-}
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
 function getSession() {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
 }
@@ -42,7 +33,7 @@ if (themeToggle) {
   });
 }
 
-/* ── Role Switcher ── */
+/* ── Role Switcher (نفس الكود السابق، لم يتغير) ── */
 const roleGuest    = document.getElementById('roleGuest');
 const roleOwner    = document.getElementById('roleOwner');
 const guestSection = document.getElementById('guestSection');
@@ -73,7 +64,7 @@ if (roleGuest && roleOwner) {
   if (p.get('role') === 'owner') switchRole('owner');
 })();
 
-/* ── Guest Tabs ── */
+/* ── Guest Tabs (نفس الكود) ── */
 const tabLogin      = document.getElementById('tabLogin');
 const tabRegister   = document.getElementById('tabRegister');
 const loginWrap     = document.getElementById('loginWrap');
@@ -100,7 +91,7 @@ function switchGuestTab(tab) {
   }
 }
 
-/* ── Owner Tabs ── */
+/* ── Owner Tabs (نفس الكود) ── */
 const ownerTabLogin    = document.getElementById('ownerTabLogin');
 const ownerTabRegister = document.getElementById('ownerTabRegister');
 const ownerLoginWrap   = document.getElementById('ownerLoginWrap');
@@ -230,16 +221,7 @@ function showSuccessOverlay(title, subtitle) {
   requestAnimationFrame(() => overlay.classList.add('show'));
 }
 
-/* ── Simple password hash (non-cryptographic, good enough for localStorage) ── */
-function hashPassword(pass) {
-  let h = 0;
-  for (let i = 0; i < pass.length; i++) {
-    h = (Math.imul(31, h) + pass.charCodeAt(i)) | 0;
-  }
-  return h.toString(36);
-}
-
-/* ── Guest Login ── */
+/* ── Guest Login ── (يعمل مع الخادم) */
 const loginBtn = document.getElementById('loginBtn');
 if (loginBtn) {
   loginBtn.addEventListener('click', async () => {
@@ -262,18 +244,16 @@ if (loginBtn) {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // استقبال الجلسة أيضًا
+        credentials: 'include',
         body: JSON.stringify({ email, password: pass, expectedRole: 'guest' })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
       const user = data.data.user;
-      // تخزين معلومات المستخدم والتوكن (إذا وجد)
       localStorage.setItem('aurum-user', JSON.stringify(user));
       if (user.token) localStorage.setItem('aurum-token', user.token);
 
-      // حفظ الثيم
       localStorage.setItem('aurum-theme', body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode');
       showSuccessOverlay('Welcome back!', 'Redirecting...');
       setTimeout(() => {
@@ -288,64 +268,60 @@ if (loginBtn) {
   });
 }
 
-/* ── Guest Register ── */
+/* ── Guest Register ── (يتصل بالخادم) */
 const registerBtn = document.getElementById('registerBtn');
 if (registerBtn) {
-  registerBtn.addEventListener('click', () => {
-    const first  = document.getElementById('regFirst')?.value.trim()  || '';
-    const last   = document.getElementById('regLast')?.value.trim()   || '';
-    const email  = document.getElementById('regEmail')?.value.trim()  || '';
-    const pass   = document.getElementById('regPass')?.value          || '';
-    const pass2  = document.getElementById('regPass2')?.value         || '';
-    const agreed = document.getElementById('agreeTerms')?.checked     || false;
+  registerBtn.addEventListener('click', async () => {
+    const first = document.getElementById('regFirst')?.value.trim() || '';
+    const last = document.getElementById('regLast')?.value.trim() || '';
+    const email = document.getElementById('regEmail')?.value.trim() || '';
+    const pass = document.getElementById('regPass')?.value || '';
+    const pass2 = document.getElementById('regPass2')?.value || '';
+    const agreed = document.getElementById('agreeTerms')?.checked || false;
 
     let ok = true;
     ['regFirstErr','regLastErr','regEmailErr','regPassErr','regPass2Err','agreeErr'].forEach(id => clearError(id));
-    if (!first)                          { setError('regFirstErr', 'Required.'); ok = false; }
-    if (!last)                           { setError('regLastErr',  'Required.'); ok = false; }
-    if (!email || !email.includes('@'))  { setError('regEmailErr', 'Please enter a valid email.'); ok = false; }
-    if (pass.length < 8)                 { setError('regPassErr',  'Password must be at least 8 characters.'); ok = false; }
-    if (pass !== pass2)                  { setError('regPass2Err', 'Passwords do not match.'); ok = false; }
-    if (!agreed)                         { setError('agreeErr',    'Please accept the Terms of Service.'); ok = false; }
+    if (!first) { setError('regFirstErr', 'First name required.'); ok = false; }
+    if (!last) { setError('regLastErr', 'Last name required.'); ok = false; }
+    if (!email || !email.includes('@')) { setError('regEmailErr', 'Valid email required.'); ok = false; }
+    if (pass.length < 6) { setError('regPassErr', 'Password must be at least 6 characters.'); ok = false; }
+    if (pass !== pass2) { setError('regPass2Err', 'Passwords do not match.'); ok = false; }
+    if (!agreed) { setError('agreeErr', 'You must agree to the terms.'); ok = false; }
     if (!ok) return;
 
     setLoading(registerBtn, true);
-
-    const users = getUsers();
-    if (users.find(u => u.email === email)) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: first,
+          lastName: last,
+          email: email,
+          password: pass,
+          role: 'guest'
+        })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      const user = data.data.user;
+      localStorage.setItem('aurum-user', JSON.stringify(user));
+      if (user.token) localStorage.setItem('aurum-token', user.token);
+      showSuccessOverlay(`Welcome to AURUM, ${first}!`, 'Setting up your account...');
+      setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+    } catch (err) {
       setLoading(registerBtn, false);
-      setError('regEmailErr', 'An account with this email already exists. Please login.');
-      return;
+      setError('regEmailErr', err.message);
     }
-
-    const initials = (first[0] + last[0]).toUpperCase();
-    const newUser  = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      firstName: first,
-      lastName:  last,
-      name:      `${first} ${last}`,
-      email,
-      password:  hashPassword(pass),
-      role:      'guest',
-      initials,
-    };
-    users.push(newUser);
-    saveUsers(users);
-
-    const sessionUser = { id: newUser.id, firstName: newUser.firstName, lastName: newUser.lastName, email: newUser.email, role: newUser.role, initials: newUser.initials, name: newUser.name };
-    saveSession(sessionUser);
-    localStorage.setItem('aurum-theme', body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode');
-    showSuccessOverlay(`Welcome to AURUM, ${first}!`, 'Setting up your account...');
-    setTimeout(() => { window.location.href = 'index.html'; }, 1500);
   });
 }
 
 /* ── Owner Login ── */
 const ownerLoginBtn = document.getElementById('ownerLoginBtn');
 if (ownerLoginBtn) {
-  ownerLoginBtn.addEventListener('click', () => {
+  ownerLoginBtn.addEventListener('click', async () => {
     const email = document.getElementById('ownerLoginEmail')?.value.trim() || '';
-    const pass  = document.getElementById('ownerLoginPass')?.value         || '';
+    const pass = document.getElementById('ownerLoginPass')?.value || '';
     clearError('ownerLoginEmailErr'); clearError('ownerLoginPassErr');
 
     if (!email || !email.includes('@')) {
@@ -358,86 +334,77 @@ if (ownerLoginBtn) {
     }
 
     setLoading(ownerLoginBtn, true);
-
-    const users = getUsers();
-    const user  = users.find(u => u.email === email && u.role === 'owner');
-
-    setTimeout(() => {
-      if (!user) {
-        setLoading(ownerLoginBtn, false);
-        setError('ownerLoginEmailErr', 'No owner account found. Please register first.');
-        return;
-      }
-      if (user.password !== hashPassword(pass)) {
-        setLoading(ownerLoginBtn, false);
-        setError('ownerLoginPassErr', 'Incorrect password.');
-        highlightInvalid('ownerLoginPass');
-        return;
-      }
-
-      const sessionUser = { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role, initials: user.initials, name: user.name, hotelName: user.hotelName };
-      saveSession(sessionUser);
-      localStorage.setItem('aurum-theme', body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode');
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password: pass, expectedRole: 'owner' })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      const user = data.data.user;
+      localStorage.setItem('aurum-user', JSON.stringify(user));
+      if (user.token) localStorage.setItem('aurum-token', user.token);
       showSuccessOverlay('Welcome back!', 'Accessing your dashboard...');
       setTimeout(() => { window.location.href = 'owner-dashboard.html'; }, 1500);
-    }, 300);
+    } catch (err) {
+      setLoading(ownerLoginBtn, false);
+      setError('ownerLoginEmailErr', err.message);
+    }
   });
 }
 
-/* ── Owner Register ── */
+/* ── Owner Register ── (يتصل بالخادم) */
 const ownerRegisterBtn = document.getElementById('ownerRegisterBtn');
 if (ownerRegisterBtn) {
-  ownerRegisterBtn.addEventListener('click', () => {
-    const first  = document.getElementById('ownerFirst')?.value.trim()       || '';
-    const last   = document.getElementById('ownerLast')?.value.trim()        || '';
-    const email  = document.getElementById('ownerEmail')?.value.trim()       || '';
-    const hotel  = document.getElementById('ownerHotel')?.value.trim()       || '';
-    const pass   = document.getElementById('ownerPass')?.value               || '';
-    const agreed = document.getElementById('ownerAgreeTerms')?.checked       || false;
+  ownerRegisterBtn.addEventListener('click', async () => {
+    const first = document.getElementById('ownerFirst')?.value.trim() || '';
+    const last = document.getElementById('ownerLast')?.value.trim() || '';
+    const email = document.getElementById('ownerEmail')?.value.trim() || '';
+    const hotel = document.getElementById('ownerHotel')?.value.trim() || '';
+    const pass = document.getElementById('ownerPass')?.value || '';
+    const agreed = document.getElementById('ownerAgreeTerms')?.checked || false;
 
     let ok = true;
     ['ownerFirstErr','ownerLastErr','ownerEmailErr','ownerHotelErr','ownerPassErr','ownerAgreeErr'].forEach(id => clearError(id));
-    if (!first)                         { setError('ownerFirstErr', 'Required.'); ok = false; }
-    if (!last)                          { setError('ownerLastErr',  'Required.'); ok = false; }
-    if (!email || !email.includes('@')) { setError('ownerEmailErr', 'Please enter a valid email.'); ok = false; }
-    if (!hotel)                         { setError('ownerHotelErr', 'Hotel name is required.'); ok = false; }
-    if (pass.length < 8)                { setError('ownerPassErr',  'Password must be at least 8 characters.'); ok = false; }
-    if (!agreed)                        { setError('ownerAgreeErr', 'Please accept the Partner Terms.'); ok = false; }
+    if (!first) { setError('ownerFirstErr', 'First name required.'); ok = false; }
+    if (!last) { setError('ownerLastErr', 'Last name required.'); ok = false; }
+    if (!email || !email.includes('@')) { setError('ownerEmailErr', 'Valid email required.'); ok = false; }
+    if (!hotel) { setError('ownerHotelErr', 'Hotel name required.'); ok = false; }
+    if (pass.length < 6) { setError('ownerPassErr', 'Password must be at least 6 characters.'); ok = false; }
+    if (!agreed) { setError('ownerAgreeErr', 'You must accept the terms.'); ok = false; }
     if (!ok) return;
 
     setLoading(ownerRegisterBtn, true);
-
-    const users = getUsers();
-    if (users.find(u => u.email === email)) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: first,
+          lastName: last,
+          email: email,
+          password: pass,
+          role: 'owner',
+          hotelName: hotel
+        })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      const user = data.data.user;
+      localStorage.setItem('aurum-user', JSON.stringify(user));
+      if (user.token) localStorage.setItem('aurum-token', user.token);
+      showSuccessOverlay(`Welcome to AURUM, ${first}!`, 'Setting up your dashboard...');
+      setTimeout(() => { window.location.href = 'owner-dashboard.html'; }, 1500);
+    } catch (err) {
       setLoading(ownerRegisterBtn, false);
-      setError('ownerEmailErr', 'An account with this email already exists.');
-      return;
+      setError('ownerEmailErr', err.message);
     }
-
-    const initials = (first[0] + last[0]).toUpperCase();
-    const newUser  = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-      firstName: first,
-      lastName:  last,
-      name:      `${first} ${last}`,
-      email,
-      password:  hashPassword(pass),
-      role:      'owner',
-      hotelName: hotel,
-      initials,
-    };
-    users.push(newUser);
-    saveUsers(users);
-
-    const sessionUser = { id: newUser.id, firstName: newUser.firstName, lastName: newUser.lastName, email: newUser.email, role: newUser.role, initials: newUser.initials, name: newUser.name, hotelName: newUser.hotelName };
-    saveSession(sessionUser);
-    localStorage.setItem('aurum-theme', body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode');
-    showSuccessOverlay(`Welcome to AURUM, ${first}!`, 'Setting up your dashboard...');
-    setTimeout(() => { window.location.href = 'owner-dashboard.html'; }, 1500);
   });
 }
 
-/* ── Google / Social Login (no OAuth — inform user) ── */
+/* ── Social login placeholder ── */
 window.socialLogin = function (provider) {
   showMsg(`${provider} login is not available. Please use email and password.`, 'error');
 };
