@@ -427,49 +427,94 @@ const bookingBackdrop = document.getElementById('bookingBackdrop');
 let _currentBookingHotel = null;
 let userBookings = [];
 
-// ✅ إضافة التوكن إلى طلب جلب الحجوزات
+// ================== FETCH USER BOOKINGS ==================
 async function fetchUserBookings() {
-  if (!currentUser) return [];
+  if (!currentUser) {
+    userBookings = [];
+    return [];
+  }
+
   const token = localStorage.getItem('aurum-token');
+  if (!token) {
+    console.warn("⚠️ No authentication token found");
+    userBookings = [];
+    return [];
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/bookings`, {
+    const res = await fetch(`${API_BASE}/bookings/me`, {
+      method: 'GET',
       credentials: 'include',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
+
+    if (res.status === 401) {
+      console.error("❌ Token expired or invalid");
+      localStorage.removeItem('aurum-token');
+      localStorage.removeItem('aurum-user');
+      currentUser = null;
+      updateNav();
+      showToast('Session expired. Please sign in again.', 'error');
+      userBookings = [];
+      return [];
+    }
+
     const data = await res.json();
-    if (data.success && Array.isArray(data.data)) userBookings = data.data;
-    else userBookings = [];
-  } catch(e) { console.error(e); userBookings = []; }
+    if (data.success && Array.isArray(data.data)) {
+      userBookings = data.data;
+    } else {
+      userBookings = [];
+    }
+  } catch (err) {
+    console.error('Error fetching bookings:', err);
+    userBookings = [];
+  }
   return userBookings;
 }
 
+// ================== GET BOOKING STATUS ==================
 function getHotelBookingStatus(hotelId) {
-  if (!userBookings.length) return null;
-  const today = new Date(); today.setUTCHours(0,0,0,0);
+  if (!userBookings || !userBookings.length) return null;
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
   const booking = userBookings.find(b => b.hotel_id === hotelId && b.status !== 'cancelled');
   if (!booking) return null;
+
   const checkIn = new Date(booking.check_in + 'T00:00:00Z');
   const checkOut = new Date(booking.check_out + 'T00:00:00Z');
-  if (checkOut < today) return { text: 'Completed', class: 'completed' };
+
+  if (checkOut < today) {
+    return { text: 'Completed', class: 'completed' };
+  }
   if (checkIn <= today && checkOut >= today) {
-    const nightsLeft = Math.round((checkOut - today)/(1000*3600*24));
-    return { text: `Current stay · ${nightsLeft} night${nightsLeft!==1?'s':''} left`, class: 'current' };
+    const nightsLeft = Math.round((checkOut - today) / (1000 * 3600 * 24));
+    return { text: `Current stay · ${nightsLeft} night${nightsLeft !== 1 ? 's' : ''} left`, class: 'current' };
   }
   if (checkIn > today) {
-    const daysLeft = Math.round((checkIn - today)/(1000*3600*24));
-    return { text: `Booked · starts in ${daysLeft} day${daysLeft!==1?'s':''}`, class: 'upcoming' };
+    const daysLeft = Math.round((checkIn - today) / (1000 * 3600 * 24));
+    return { text: `Booked · starts in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, class: 'upcoming' };
   }
   return { text: 'Completed', class: 'completed' };
 }
 
+// ================== UPDATE ALL BOOKING BADGES ==================
 async function updateAllBookingBadges() {
   if (!currentUser) return;
   await fetchUserBookings();
+
   document.querySelectorAll('.hotel-card').forEach(card => {
     const hotelId = parseInt(card.dataset.hotelId);
+    if (!hotelId) return;
+
     const status = getHotelBookingStatus(hotelId);
     const existingBadge = card.querySelector('.hotel-booked-badge');
     const bookBtn = card.querySelector('.hotel-book-btn');
+
     if (status) {
       if (!existingBadge) {
         const badge = document.createElement('div');
@@ -481,12 +526,16 @@ async function updateAllBookingBadges() {
         existingBadge.textContent = status.text;
         existingBadge.className = `hotel-booked-badge ${status.class}`;
       }
+
       if (bookBtn) {
         bookBtn.classList.add('booked-btn');
         bookBtn.textContent = 'View My Stay';
         const newBtn = bookBtn.cloneNode(true);
         bookBtn.parentNode.replaceChild(newBtn, bookBtn);
-        newBtn.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = 'reservations.html'; });
+        newBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.location.href = 'reservations.html';
+        });
       }
     } else {
       if (existingBadge) existingBadge.remove();
@@ -495,6 +544,7 @@ async function updateAllBookingBadges() {
         bookBtn.textContent = 'Reserve Now';
         const newBtn = bookBtn.cloneNode(true);
         bookBtn.parentNode.replaceChild(newBtn, bookBtn);
+
         const hotel = hotelDatabase.find(h => h.id === hotelId);
         newBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -506,96 +556,98 @@ async function updateAllBookingBadges() {
   });
 }
 
+// ================== CHECK UPCOMING BOOKINGS ==================
 function checkUpcomingBookings() {
-  if (!userBookings.length) return;
-  const today = new Date(); today.setUTCHours(0,0,0,0);
+  if (!userBookings || !userBookings.length) return;
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
   userBookings.forEach(b => {
     if (b.status === 'cancelled') return;
     const checkIn = new Date(b.check_in + 'T00:00:00Z');
-    const checkOut = new Date(b.check_out + 'T00:00:00Z');
-    if (Math.round((checkIn - today)/(1000*3600*24)) === 1) showToast(`🔔 Stay at ${b.hotel_name} starts tomorrow!`, 'info');
-    if (Math.round((checkOut - today)/(1000*3600*24)) === 1) showToast(`🔔 Check out of ${b.hotel_name} tomorrow.`, 'info');
+    const daysLeft = Math.round((checkIn - today) / (1000 * 3600 * 24));
+    if (daysLeft === 1) {
+      showToast(`🔔 Your stay at ${b.hotel_name || 'the hotel'} starts tomorrow!`, 'info');
+    }
   });
 }
 
+// ================== OPEN BOOKING MODAL ==================
 function openBookingModal(hotel) {
-  if (!currentUser) { showSideSigninTip(document.body, hotel); return; }
+  if (!currentUser) {
+    showSideSigninTip(document.body, hotel, 'Please sign in to make a booking');
+    return;
+  }
+
+  _currentBookingHotel = hotel;
+
   document.getElementById('modalHotelName').textContent = hotel.name;
   document.getElementById('modalHotelLoc').textContent = `${hotel.city}, ${hotel.country}`;
   document.getElementById('summaryRate').textContent = `$${hotel.price}/night`;
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
-  const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate()+7);
-  const toISO = d => d.toISOString().split('T')[0];
-  document.getElementById('bookingCheckin').value = toISO(tomorrow);
-  document.getElementById('bookingCheckout').value = toISO(nextWeek);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+
+  document.getElementById('bookingCheckin').value = tomorrow.toISOString().split('T')[0];
+  document.getElementById('bookingCheckout').value = nextWeek.toISOString().split('T')[0];
+
   updateSummary(hotel.price);
-  _currentBookingHotel = hotel;
+
   const paySection = document.getElementById('paymentSection');
   if (paySection) paySection.classList.add('hidden');
+
   if (bookingModal) bookingModal.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-function updateSummary(rate) {
-  const cin = document.getElementById('bookingCheckin')?.value;
-  const cout = document.getElementById('bookingCheckout')?.value;
-  const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
-  if (cin && cout && new Date(cout) > new Date(cin)) {
-    const nights = Math.round((new Date(cout) - new Date(cin))/(86400000));
-    const nightsSpan = document.getElementById('summaryNights');
-    const totalSpan = document.getElementById('summaryTotal');
-    if (nightsSpan) nightsSpan.textContent = nights;
-    if (totalSpan) totalSpan.textContent = '$' + (nights*rate*rooms).toLocaleString();
-  }
-}
-document.getElementById('bookingClose')?.addEventListener('click', closeBooking);
-bookingBackdrop?.addEventListener('click', closeBooking);
-function closeBooking() { if (bookingModal) bookingModal.classList.remove('open'); document.body.style.overflow = ''; }
-['bookingCheckin','bookingCheckout','bookingRooms'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', () => {
-    const r = parseFloat(document.getElementById('summaryRate')?.textContent.replace(/[^0-9.]/g,'') || 0);
-    updateSummary(r);
-  });
-});
-document.getElementById('confirmBooking')?.addEventListener('click', () => {
-  if (!document.getElementById('bookingCheckin')?.value || !document.getElementById('bookingCheckout')?.value) { showToast('Select dates','error'); return; }
-  const ps = document.getElementById('paymentSection');
-  if (ps?.classList.contains('hidden')) { ps.classList.remove('hidden'); setTimeout(()=>document.getElementById('payName')?.focus(),120); return; }
-  document.getElementById('payConfirmBtn')?.click();
-});
-
-// ✅ دالة الدفع المصححة بالكامل (مع التوكن)
+// ================== PAYMENT & CONFIRM BOOKING ==================
 const payConfirm = document.getElementById('payConfirmBtn');
 if (payConfirm) {
   payConfirm.addEventListener('click', async () => {
     const name = document.getElementById('payName')?.value.trim() || '';
-    const number = document.getElementById('payNumber')?.value.replace(/\s/g,'') || '';
+    const number = document.getElementById('payNumber')?.value.replace(/\s/g, '') || '';
     const exp = document.getElementById('payExp')?.value.trim() || '';
     const cvc = document.getElementById('payCvc')?.value.trim() || '';
-    if (!name || !number || !exp || !cvc) { showToast('Complete payment details','error'); return; }
+
+    if (!name || !number || !exp || !cvc) {
+      showToast('Please complete payment details', 'error');
+      return;
+    }
 
     const cin = document.getElementById('bookingCheckin')?.value;
     const cout = document.getElementById('bookingCheckout')?.value;
     const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
-    if (!cin || !cout || !_currentBookingHotel) { showToast('Missing booking details','error'); return; }
+
+    if (!cin || !cout || !_currentBookingHotel) {
+      showToast('Missing booking details', 'error');
+      return;
+    }
+
+    const token = localStorage.getItem('aurum-token');
+    if (!token) {
+      showToast('Please sign in first', 'error');
+      return;
+    }
 
     payConfirm.disabled = true;
-    payConfirm.textContent = 'Processing…';
+    payConfirm.textContent = 'Processing...';
+
     try {
       const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
       const last4 = number.slice(-4);
       const totalPrice = _currentBookingHotel.price * nights * rooms;
       const roomType = document.getElementById('bookingRoomType')?.value || 'Deluxe Room';
-      const token = localStorage.getItem('aurum-token');
 
       const response = await fetch(`${API_BASE}/bookings`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include',
         body: JSON.stringify({
           hotelId: _currentBookingHotel.id,
           roomType,
@@ -610,25 +662,30 @@ if (payConfirm) {
           guestEmail: currentUser?.email || '',
         })
       });
+
       const data = await response.json();
+
       if (!data.success) throw new Error(data.error || 'Booking failed');
+
       closeBooking();
-      showToast(`✔ Confirmed! Total: $${totalPrice.toLocaleString()}`, 'success');
-      if (currentUser) {
-        await fetchUserBookings();
-        updateAllBookingBadges();
-        checkUpcomingBookings();
-      }
+      showToast(`✔ Booking Confirmed! Total: $${totalPrice.toLocaleString()}`, 'success');
+
+      await fetchUserBookings();
+      await updateAllBookingBadges();
+      checkUpcomingBookings();
+
       setTimeout(() => {
         const t = document.createElement('div');
         t.textContent = '→ VIEW MY RESERVATIONS';
-        t.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9999;background:var(--gold);color:#000;padding:10px 18px;font-size:11px;cursor:pointer;border-radius:4px;';
+        t.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9999;background:var(--gold);color:#000;padding:12px 20px;font-size:13px;cursor:pointer;border-radius:6px;font-weight:600;';
         t.onclick = () => window.location.href = 'reservations.html';
         document.body.appendChild(t);
-        setTimeout(()=>t.remove(),5000);
-      },500);
-    } catch(err) {
-      showToast(err.message, 'error');
+        setTimeout(() => t.remove(), 6000);
+      }, 800);
+
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'An error occurred during booking', 'error');
     } finally {
       payConfirm.disabled = false;
       payConfirm.textContent = 'Pay & Confirm';
@@ -636,23 +693,41 @@ if (payConfirm) {
   });
 }
 
-function showSideSigninTip(button, hotel, msg) {
-  const tip = document.createElement('div');
-  tip.id = 'signinTip';
-  tip.className = 'signin-tip signin-tip--alert';
-  tip.innerHTML = `<div class="signin-tip-body"><div class="signin-tip-msg">${msg || 'Please sign in to continue'}</div></div>`;
-  document.body.appendChild(tip);
-  const rect = button.getBoundingClientRect();
-  tip.style.position = 'absolute';
-  tip.style.zIndex = 9999;
-  tip.style.left = `${rect.right + 20}px`;
-  tip.style.top = `${rect.top + (rect.height/2) - 20}px`;
-  setTimeout(() => tip.classList.add('show'), 10);
-  tip.style.cursor = 'pointer';
-  tip.onclick = () => window.location.href = 'auth.html';
-  setTimeout(() => tip.remove(), 4000);
+// ================== HELPER FUNCTIONS ==================
+function updateSummary(rate) {
+  const cin = document.getElementById('bookingCheckin')?.value;
+  const cout = document.getElementById('bookingCheckout')?.value;
+  const rooms = parseInt(document.getElementById('bookingRooms')?.value) || 1;
+  if (cin && cout && new Date(cout) > new Date(cin)) {
+    const nights = Math.round((new Date(cout) - new Date(cin)) / 86400000);
+    const nightsSpan = document.getElementById('summaryNights');
+    const totalSpan = document.getElementById('summaryTotal');
+    if (nightsSpan) nightsSpan.textContent = nights;
+    if (totalSpan) totalSpan.textContent = '$' + (nights * rate * rooms).toLocaleString();
+  }
 }
 
+document.getElementById('bookingClose')?.addEventListener('click', closeBooking);
+bookingBackdrop?.addEventListener('click', closeBooking);
+
+function closeBooking() {
+  if (bookingModal) bookingModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('confirmBooking')?.addEventListener('click', () => {
+  if (!document.getElementById('bookingCheckin')?.value || !document.getElementById('bookingCheckout')?.value) {
+    showToast('Please select dates', 'error');
+    return;
+  }
+  const ps = document.getElementById('paymentSection');
+  if (ps?.classList.contains('hidden')) {
+    ps.classList.remove('hidden');
+    setTimeout(() => document.getElementById('payName')?.focus(), 120);
+    return;
+  }
+  document.getElementById('payConfirmBtn')?.click();
+});
 /* ══════════ AI CONCIERGE (مختصر) ══════════ */
 const aiModal = document.getElementById('aiModal');
 const aiMessages = document.getElementById('aiMessages');
