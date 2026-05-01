@@ -483,17 +483,17 @@ function getHotelBookingStatus(hotelId) {
 
   if (checkOut < today) return { text: 'Completed', class: 'completed' };
   if (checkIn <= today && checkOut >= today) {
-    const nightsLeft = Math.round((checkOut - today) / (1000*3600*24));
+    const nightsLeft = Math.round((checkOut - today) / (1000 * 3600 * 24));
     return { text: `Current stay · ${nightsLeft} night${nightsLeft !== 1 ? 's' : ''} left`, class: 'current' };
   }
   if (checkIn > today) {
-    const daysLeft = Math.round((checkIn - today) / (1000*3600*24));
+    const daysLeft = Math.round((checkIn - today) / (1000 * 3600 * 24));
     return { text: `Booked · starts in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, class: 'upcoming' };
   }
   return { text: 'Completed', class: 'completed' };
 }
 
-// تحديث الشارات
+// تحديث الـ Badges
 async function updateAllBookingBadges() {
   if (!currentUser) return;
   await fetchUserBookings();
@@ -511,22 +511,15 @@ async function updateAllBookingBadges() {
         const badge = document.createElement('div');
         badge.className = `hotel-booked-badge ${status.class}`;
         badge.textContent = status.text;
-        card.querySelector('.hotel-card-img').appendChild(badge);
+        card.querySelector('.hotel-card-img')?.appendChild(badge);
       } else {
         existingBadge.textContent = status.text;
         existingBadge.className = `hotel-booked-badge ${status.class}`;
       }
-
-      if (bookBtn) {
-        bookBtn.textContent = 'View My Stay';
-        bookBtn.classList.add('booked-btn');
-      }
+      if (bookBtn) bookBtn.textContent = 'View My Stay';
     } else {
       if (existingBadge) existingBadge.remove();
-      if (bookBtn) {
-        bookBtn.textContent = 'Reserve Now';
-        bookBtn.classList.remove('booked-btn');
-      }
+      if (bookBtn) bookBtn.textContent = 'Reserve Now';
     }
   });
 }
@@ -554,27 +547,25 @@ function openBookingModal(hotel) {
 
   updateSummary(hotel.price);
 
-  const paySection = document.getElementById('paymentSection');
-  if (paySection) paySection.classList.add('hidden');
+  document.getElementById('paymentSection')?.classList.add('hidden');
 
   bookingModal.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-// دالة الدفع - النسخة النهائية
+// دالة الدفع الرئيسية (الأهم)
 const payConfirm = document.getElementById('payConfirmBtn');
 if (payConfirm) {
   payConfirm.addEventListener('click', async () => {
     refreshCurrentUser();
 
-    // التحقق المهم
-    if (!currentUser || !localStorage.getItem('aurum-token')) {
+    if (!currentUser) {
       showToast('Please sign in first', 'error');
       return;
     }
 
     const name = document.getElementById('payName')?.value.trim() || '';
-    const number = document.getElementById('payNumber')?.value.replace(/\s/g,'') || '';
+    const number = document.getElementById('payNumber')?.value.replace(/\s/g, '') || '';
     const exp = document.getElementById('payExp')?.value.trim() || '';
     const cvc = document.getElementById('payCvc')?.value.trim() || '';
 
@@ -593,6 +584,10 @@ if (payConfirm) {
     }
 
     const token = localStorage.getItem('aurum-token');
+    if (!token) {
+      showToast('Please sign in first', 'error');
+      return;
+    }
 
     payConfirm.disabled = true;
     payConfirm.textContent = 'Processing...';
@@ -620,8 +615,8 @@ if (payConfirm) {
           pricePerNight: _currentBookingHotel.price,
           paymentMethod: 'card',
           paymentLast4: last4,
-          guestName: currentUser.name || name,
-          guestEmail: currentUser.email || '',
+          guestName: currentUser?.name || name,
+          guestEmail: currentUser?.email || '',
         })
       });
 
@@ -660,7 +655,7 @@ document.getElementById('bookingClose')?.addEventListener('click', closeBooking)
 bookingBackdrop?.addEventListener('click', closeBooking);
 
 function closeBooking() {
-  bookingModal.classList.remove('open');
+  if (bookingModal) bookingModal.classList.remove('open');
   document.body.style.overflow = '';
 }
 
@@ -677,53 +672,6 @@ document.getElementById('confirmBooking')?.addEventListener('click', () => {
     document.getElementById('payConfirmBtn')?.click();
   }
 });
-
-// ================== CHECK UPCOMING BOOKINGS ==================
-function checkUpcomingBookings() {
-  if (!userBookings || !userBookings.length) return;
-
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  userBookings.forEach(b => {
-    if (b.status === 'cancelled') return;
-    const checkIn = new Date(b.check_in + 'T00:00:00Z');
-    const daysLeft = Math.round((checkIn - today) / (1000 * 3600 * 24));
-    if (daysLeft === 1) {
-      showToast(`🔔 Your stay at ${b.hotel_name || 'the hotel'} starts tomorrow!`, 'info');
-    }
-  });
-}
-
-// ================== OPEN BOOKING MODAL ==================
-function openBookingModal(hotel) {
-  if (!currentUser) {
-    showSideSigninTip(document.body, hotel, 'Please sign in to make a booking');
-    return;
-  }
-
-  _currentBookingHotel = hotel;
-
-  document.getElementById('modalHotelName').textContent = hotel.name;
-  document.getElementById('modalHotelLoc').textContent = `${hotel.city}, ${hotel.country}`;
-  document.getElementById('summaryRate').textContent = `$${hotel.price}/night`;
-
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-
-  document.getElementById('bookingCheckin').value = tomorrow.toISOString().split('T')[0];
-  document.getElementById('bookingCheckout').value = nextWeek.toISOString().split('T')[0];
-
-  updateSummary(hotel.price);
-
-  const paySection = document.getElementById('paymentSection');
-  if (paySection) paySection.classList.add('hidden');
-
-  if (bookingModal) bookingModal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
 
 // ================== PAYMENT & CONFIRM BOOKING ==================
 const payConfirm = document.getElementById('payConfirmBtn');
